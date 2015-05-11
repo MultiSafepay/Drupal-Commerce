@@ -1,0 +1,547 @@
+<?php
+
+require_once dirname(__FILE__) . "includes/api/Autoloader.php";
+
+/**
+ * @file
+ * Integrates MultiSafepay with Drupal Commerce.
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * Defines a menu callback to receive the payment status from MultiSafepay.
+ */
+function commerce_multisafepay_menu() {
+  $items = array();
+  $items['multisafepay/notification'] = array(
+    'page callback' => 'commerce_multisafepay_payment_callback',
+    'page arguments' => array(2, 3),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  
+  $items['multisafepay/return'] = array(
+    'page callback' => 'commerce_multisafepay_payment_return',
+    'page arguments' => array(2, 3),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+
+
+/**
+ *
+ * Determines access to the refund form for MultiSafepay transactions.
+ *
+ * @param stdClass $order
+ *   The order the transaction is on.
+ * @param stdClass $transaction
+ *   The payment transaction object to be refunded.
+ *
+ * @return bool
+ *   TRUE or FALSE indicating access.
+ */
+function commerce_multisafepay_refund_access($order, $transaction) {
+  if ($transaction->payment_method != 'commerce_multisafepay'
+    || empty($transaction->remote_id)
+    || !in_array($transaction->remote_status, array('completed','shipped'))
+    || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
+    return FALSE;
+  }
+
+  // Return FALSE if the transaction was not a success.
+  if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
+    return FALSE;
+  }
+
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $order_total = $order_wrapper->commerce_order_total->value();
+  $balance = commerce_payment_order_balance($order);
+  if ($balance['amount'] >= $order_total['amount']) {
+    return FALSE;
+  }
+
+  if ($transaction->amount <= 0) {
+    return FALSE;
+  }
+
+  // Return FALSE if it is more than 60 days since the original transaction.
+  /*if (REQUEST_TIME - $transaction->created > 86400 * 60) {
+    return FALSE;
+  }*/
+
+  // Allow access if the user can update payments on this transaction.
+  return commerce_payment_transaction_access('update', $transaction);
+}
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ *
+ * Defines Multisafepay's Frontend payment method.
+ */
+function commerce_multisafepay_commerce_payment_method_info() { 
+  $payment_methods = array();
+
+    $payment_methods['commerce_multisafepay'] = array(
+        'title' => 'multisafepay',
+        'display_title' => variable_get('multisafepay_title', 'multisafepay '),
+        'description' => t('Enable payments using multisafepay Global payments'),
+        'terminal' => FALSE,
+        'callbacks' => array(),
+        'offsite' => TRUE,
+        'offsite_autoredirect' => TRUE,
+    );
+    return $payment_methods;
+}
+
+
+/**
+ * Payment method callback: Generates the payment method settings form.
+ */
+function commerce_multisafepay_settings_form($settings = NULL) {
+  $form = array();
+  $settings = (array) $settings + array(
+    'multisafepay_environment' => '',
+    'multisafepay_live_api_key' => '',
+    'multisafepay_test_api_key' => '',
+    'multisafepay_title' => '',
+  );
+ 
+  $form['multisafepay_title'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Title in Checkout',
+        '#default_value' => isset($settings['multisafepay_title']) ? $settings['multisafepay_title'] : t('multisafepay '),
+        '#description' => t('The title of the payment method displayed to customers in checkout'),
+    );
+  
+  $form['multisafepay_environment'] = array(
+        '#required' => TRUE,
+        '#type' => 'radios',
+        '#title' => t('Test or Production'),
+        '#default_value' => $settings['multisafepay_environment'],
+        '#options' => array(
+            t('Production'),
+            t('Test'),
+        )
+    );
+  
+  $form['multisafepay_live_api_key'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Live API key',
+        '#default_value' => $settings['multisafepay_live_api_key'],
+        '#description' => t('Enter the API key (Live environement). You can find it in the Multisafepay website profile'),
+    );
+  
+  $form['multisafepay_test_api_key'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Test API key',
+        '#default_value' => $settings['multisafepay_test_api_key'],
+        '#description' => t('Enter the API key (Test environment). You can find it in the Multisafepay website profile'),
+    );
+  
+  return $form;
+}
+
+
+/**
+ * Payment method callback: submit form validation.
+ */
+function commerce_multisafepay_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array()) {
+ // At this point we don't do validation on the API key.
+  return TRUE;
+}
+
+
+/**
+ * Redirects the user to the hosted payment page.
+ */
+function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payment_method) {
+  $payment_method['settings'] += array(
+    // Return to the previous page when the payment is cancelled.
+    'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
+    // Return to the payment redirect page for processing successful payments.
+    'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
+    // Specify the current payment method instance ID in the notify_url.
+    'payment_method' => $payment_method['instance_id'],
+  );
+  return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+}
+
+
+/**
+ * Defines the order form.
+ *
+ * This form is displayed directly before redirecting to Moneybookers hosted
+ * payment page.
+ *
+ * @ingroup forms
+ * @see commerce_moneybookers_submission_redirect()
+ */
+function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_method) {
+  //drupal_add_js(drupal_get_path('module', 'commerce_moneybookers') . '/commerce_moneybookers.js');
+
+    
+    $msp = new MultiSafepay_API_Client;
+    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80");    
+    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    
+    try {
+        $order_id = time();
+
+        $order = $msp->orders->post(array(
+            "type" => "redirect",
+            "order_id" => $order_id,
+            "currency" => "EUR",
+            "amount" => 1000,
+            "description" => "Demo Transaction",
+            "var1" => "1",
+            "var2" => "2",
+            "var3" => "3",
+            "items" => "items list",
+            "manual" => "false",
+            "gateway" => "",
+            "days_active" => "30",
+            "payment_options" => array(
+                "notification_url" => "http://www.notification.url",
+                "redirect_url" => "http://www.redirect.url",
+                "cancel_url" => "http://www.cancel.url",
+                "close_window" => "true"
+            ),
+            "customer" => array(
+                "locale" => "nl_NL",
+                "ip_address" => "127.0.0.1",
+                "forwarded_ip" => "127.0.0.1",
+                "first_name" => "Jan",
+                "last_name" => "Modaal",
+                "address1" => "Kraanspoor",
+                "address2" => "",
+                "house_number" => "39",
+                "zip_code" => "1032 SC",
+                "city" => "Amsterdam",
+                "state" => "",
+                "country" => "NL",
+                "phone" => "0208500500",
+                "email" => "test@test.nl",
+            ),
+            "google_analytics" => array(
+                "account" => "UA-XXXXXXXXX",
+            ),
+            "plugin" => array(
+                "shop" => "ideal demo",
+                "shop_version" => "1.0.0",
+                "plugin_version" => "1.0.1",
+                "partner" => "MultiSafepay",
+                "shop_root_url" => "http://www.demo.nl",
+            ),
+            "custom_info" => array(
+                "custom_1" => "value1",
+                "custom_2" => "value2",
+            )
+        ));
+
+        header("Location: " . $msp->orders->getPaymentLink());
+    } catch (MultiSafepay_API_Exception $e) {
+        echo "Error " . htmlspecialchars($e->getMessage());
+    }
+    
+    
+    
+  //old XML API. to be removed   
+    
+  // Ensure a default value for the payment_method setting.
+  $payment_method['settings'] += array('payment_method' => '');
+  global $language;
+    $wrapper = entity_metadata_wrapper('commerce_order', $order);
+    $line_items = $order->commerce_line_items;
+
+    $item_list = '<ul>';
+
+    foreach ($line_items as $key => $items) {
+        foreach ($items as $item) {
+            $item_object = commerce_line_item_load($item['line_item_id']);
+            $title = commerce_line_item_title($item_object);
+            $quantity = $item_object->quantity;
+            //print_r($item_object);
+            $item_list .= '<li>' . $title . ' x ' . $quantity . '</li>';
+        }
+    }
+    $item_list .= '</ul>';
+
+    $country = $wrapper->commerce_customer_billing->commerce_customer_address->country->value();
+    $address = $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value();
+    $street = $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value();
+    $number = $wrapper->commerce_customer_billing->commerce_customer_address->premise->value();
+    $postal_code = $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value();
+    $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->first_name->value();
+    $last_name = $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value();
+    $city = $wrapper->commerce_customer_billing->commerce_customer_address->locality->value();
+    $mail = $order->mail;
+    $currency_code = $wrapper->commerce_order_total->currency_code->value();
+    $amount = $wrapper->commerce_order_total->amount->value();
+    $langcode = $language->language . '_' . strtoupper($language->language);
+
+    if (empty($first_name)) {
+        $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->name_line->value();
+    }
+
+    
+    //$amount = commerce_currency_amount_to_decimal($amount, $currency_code);
+      // Round the amount to specific currency.
+    //$amount = commerce_currency_round($amount, commerce_currency_load($currency_code));
+
+    // Ensure a default value for the payment_method setting.
+    $settings += array('payment_method' => 'multisafepay');
+
+    global $base_url;
+    $msp = new MultiSafepay();
+    $msp->test = $settings['multisafepay_test'];
+    $msp->merchant['account_id'] = $settings['multisafepay_account_id'];
+    $msp->merchant['site_id'] = $settings['multisafepay_site_id'];
+    $msp->merchant['site_code'] = $settings['multisafepay_secure_code'];
+    $msp->merchant['notification_url'] = multisafepay_helper()->getPostbackURL();
+    $msp->merchant['cancel_url'] = multisafepay_helper()->getResultURL();
+    $msp->merchant['redirect_url'] = multisafepay_helper()->getResultURL();
+    $msp->merchant['close_window'] = true;
+    $msp->customer['locale'] = $langcode;
+    $msp->customer['firstname'] = $first_name;
+    $msp->customer['lastname'] = $last_name;
+    $msp->customer['zipcode'] = $postal_code;
+    $msp->customer['city'] = $city;
+    $msp->customer['email'] = $mail;
+    //$msp->customer['phone']							= $order_info['telephone'];
+    $msp->customer['country'] = $country;
+    $msp->parseCustomerAddress($address);
+    $msp->transaction['id'] = $order->data['commerce_multisafepay_orderid'];
+    $msp->transaction['currency'] = $currency_code;
+    $msp->transaction['amount'] = $amount;
+    $msp->transaction['var1'] = $order->order_id;
+    $msp->transaction['description'] = 'Order #' . $msp->transaction['id'];
+    $msp->transaction['items'] = $item_list;
+    //$msp->plugin_name = 'Drupal Commerce 7.x-1.4';
+   // $msp->version = '(1.0.0)';
+
+    //$msp->plugin['shop'] = 'Drupal Commerce';
+    //$msp->plugin['shop_version'] = 'Unknown';
+    //$msp->plugin['plugin_version'] = '1.0.0';
+   // $msp->plugin['partner'] = '';
+   // $msp->plugin['shop_root_url'] = $base_url;
+
+    $url = $msp->startTransaction();
+    
+
+    if (!isset($msp->error)) {
+        $form['#action'] = $url;
+        $form['submit'] = array(
+            '#type' => 'submit',
+            '#value' => t('Start payment'),
+        );
+        return $form;
+    } else {
+        echo "Error " . $msp->error_code . ": " . $msp->error;
+        exit();
+    }
+}
+
+/**
+ * Defines the payment callback.
+ *
+ * POST callback that decides which URL Moneybookers will redirect the user to
+ * after the payment has been submitted.
+ *
+ * @param stdClass $order
+ *   Order object.
+ * @param array $payment_method
+ *   The payment method instance array associated with this API request.
+ *
+ * @return array
+ *   An url used by Moneybookers to redirect the customer.
+ */
+function commerce_multisafepay_payment_callback($order, $payment_method) {
+  
+
+    $msp = new MultiSafepay();
+    $msp->test = variable_get('multisafepay_test');
+    $msp->merchant['account_id'] = variable_get('multisafepay_account_id');
+    $msp->merchant['site_id'] = variable_get('multisafepay_site_id');
+    $msp->merchant['site_code'] = variable_get('multisafepay_secure_code');
+    $msp->transaction['id'] = $_GET['transactionid'];
+    $status = $msp->getStatus();
+    $details = $msp->details;
+    //$initial_request									= (isset($_GET['type']) == 'initial');
+
+    if (!isset($msp->error)) {
+        $transaction = commerce_payment_transaction_load($_GET['transactionid']);
+        $order = commerce_order_load($transaction->order_id);
+
+        if ($transaction->remote_status == "INITIALIZED") {
+            if ($transaction->remote_status == "INITIALIZED" && $status == 'completed' && $transaction->status != 'processing') {
+                commerce_checkout_complete($order);
+                $transaction->remote_status = strtoupper($status);
+                $transaction->remote_id = $_GET['transactionid'];
+                $transaction->payment_method = "commerce_payment_multisafepay";
+                $transaction->status = 'processing';
+                $transaction->message = $status;
+                commerce_payment_transaction_save($transaction);
+                /*
+                 * 	http://drupalcontrib.org/api/drupal/contributions!commerce!modules!order!commerce_order.module/function/commerce_order_status_update/7
+                 * 	check this url to test with the options. We need to verify if the emails are send out twice by error.
+                 */
+                commerce_order_status_update($order, 'processing');
+            } elseif ($status == 'initialized') {
+                //commerce_checkout_complete($order);
+                $transaction->remote_status = strtoupper($status);
+                $transaction->remote_id = $_GET['transactionid'];
+                $transaction->payment_method = "commerce_payment_multisafepay";
+                $transaction->status = 'pending';
+                $transaction->message = $status;
+                commerce_payment_transaction_save($transaction);
+                commerce_order_status_update($order, 'pending');
+            } elseif ($status == 'void' || $status == "expired" || $status == "declined") {
+                //commerce_checkout_complete($order);
+                $transaction->remote_status = strtoupper($status);
+                $transaction->remote_id = $_GET['transactionid'];
+                $transaction->payment_method = "commerce_payment_multisafepay";
+                $transaction->status = 'canceled';
+                $transaction->message = $status;
+                commerce_payment_transaction_save($transaction);
+                commerce_order_status_update($order, 'canceled');
+            }
+        }
+    }
+
+    if ($initial_request != null) {
+        global $base_url;
+        echo '<a href=' . $base_url . '>Klik hier om terug te keren naar de website</a>';
+        exit;
+    } else {
+        echo 'OK';
+        exit;
+    }
+
+
+
+
+/*
+
+
+
+
+
+// Set the redirect path to the payment page. In case of error the customer
+  // will be redirected to this url.
+  $redirect_path = url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE));
+  if (!isset($_POST)) {
+    watchdog('commerce_moneybookers', 'IPN URL accessed with no POST data submitted.', array(), WATCHDOG_WARNING);
+  }
+  elseif (!isset($_POST['SECURITY_HASH']) || $_POST['SECURITY_HASH'] != commerce_moneybookers_signature($payment_method['settings'], $_POST)) {
+    watchdog('commerce_moneybookers', 'IPN rejected: invalid hash comparaison.', array(), WATCHDOG_ERROR);
+  }
+  else {
+    $transaction = commerce_payment_transaction_new('commerce_moneybookers', $order->order_id);
+    // Failed transaction.
+    if (!isset($_POST['PROCESSING_RESULT']) || $_POST['PROCESSING_RESULT'] != 'ACK') {
+      $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
+
+      if (!isset($_POST['PROCESSING_RESULT'])) {
+        $transaction->message = t('No POST data received');
+      }
+      else {
+        $transaction->message = t('The payment has failed, transaction was not acknowledged. Result code: %code, message: %message', array('%code' => $_POST['PROCESSING_RETURN_CODE'], '%message' => $_POST['PROCESSING_RETURN']));
+      }
+    }
+    // Acknowledged transaction, but that does not necessarily mean it went
+    // through.
+    else {
+      switch ($_POST['PROCESSING_STATUS_CODE']) {
+        // SUCCESS || NEUTRAL || NEW.
+        case 00:
+        case 40:
+        case 90:
+          // If the transaction is an authorization we mark it as pending.
+          if ($_POST['PAYMENT_CODE'] == 'CC.PA') {
+            $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+            $transaction->message = t('Payment pending, reason: %message', array('%message' => $_POST['PROCESSING_RETURN']));
+          }
+          // Mark the transaction as succeed for other cases. E.g. debit.
+          else {
+            $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+            $transaction->message = t('Payment succeeded with message: %message', array('%message' => $_POST['PROCESSING_RETURN']));
+          }
+          break;
+
+        // WAITING || WAITING_BANK || WAITING_RISK.
+        case 80:
+        case 59:
+        case 64:
+          $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+          $transaction->message = t('Payment pending, reason: %message', array('%message' => $_POST['PROCESSING_RETURN']));
+          break;
+
+        // REJECTED_BANK || REJECTED_RISK || REJECTED_VALIDATION.
+        case 60:
+        case 65:
+        case 70:
+        default:
+          $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
+          $transaction->message = t('Payment failed with code %code and message: %message', array('%code' => $_POST['PROCESSING_STATUS_CODE'], '%message' => $_POST['PROCESSING_RETURN']));
+          break;
+      }
+      $redirect_path = url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE));
+    }
+    $transaction->remote_id = $_POST['IDENTIFICATION_UNIQUEID'];
+    $transaction->remote_status = $_POST['PROCESSING_CODE'];
+    $transaction->payload[REQUEST_TIME] = $_POST;
+    $transaction->instance_id = $payment_method['instance_id'];
+    $transaction->amount = commerce_currency_decimal_to_amount($_POST['PRESENTATION_AMOUNT'], $_POST['CLEARING_CURRENCY']);
+    $transaction->currency_code = $_POST['CLEARING_CURRENCY'];
+    commerce_payment_transaction_save($transaction);
+  }
+  print $redirect_path;
+  drupal_exit();*/
+}
+
+
+
+
+/**
+ * Builds a request array for the Refund type.
+ *
+ * @param stdClass $order
+ *   Order object.
+ * @param stdClass $transaction
+ *   Transaction object.
+ * @param array $charge
+ *   An array with the transaction amount and currency.
+ *
+ * @return array
+ *   Array of parameters to be sent for a refund request.
+ */
+function commerce_multisafepay_request_refund($order, $transaction, $charge) {
+  return array(
+    'PAYMENT.CODE' => 'CC.RF',
+    'IDENTIFICATION.TRANSACTIONID' => $order->order_number,
+    'IDENTIFICATION.REFERENCEID' => $transaction->remote_id,
+    'PRESENTATION.AMOUNT' => $charge['amount'],
+    'PRESENTATION.CURRENCY' => $charge['currency'],
+  );
+}
+
+
+
+
+
+/**
+ * Outputs a temporary page before the MultiSafepay form is submitted.
+ *
+ * Since the form is submitted via a JavaScript call, this page is only really
+ * visible to those that have JS turned off.
+ */
+function commerce_multisafepay_waiting_page() {
+  print ('<html><head><title></title></head><body><p>');
+  print t('Please wait to be redirected to MultiSafepay.');
+  print ('</p></body></html>');
+  drupal_exit();
+}
