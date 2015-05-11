@@ -1,5 +1,5 @@
 <?php
-class MultiSafepay_API_Object_Transactions extends MultiSafepay_API_Object_Core{
+class API_Object_Transactions extends API_Object_Core{
     
     public $success;
     public $data;

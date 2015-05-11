@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "includes/api/Autoloader.php";
+require_once dirname(__FILE__) . "/includes/API/Autoloader.php";
 
 /**
  * @file
@@ -174,17 +174,17 @@ function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payme
 /**
  * Defines the order form.
  *
- * This form is displayed directly before redirecting to Moneybookers hosted
+ * This form is displayed directly before redirecting to MultiSafepay
  * payment page.
  *
  * @ingroup forms
- * @see commerce_moneybookers_submission_redirect()
+ * @see commerce_multisafepay_submission_redirect()
  */
 function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_method) {
-  //drupal_add_js(drupal_get_path('module', 'commerce_moneybookers') . '/commerce_moneybookers.js');
+  drupal_add_js(drupal_get_path('module', 'commerce_multisafepay') . '/commerce_multisafepay.js');
 
     
-    $msp = new MultiSafepay_API_Client;
+    $msp = new API_Client;
     $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80");    
     $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
     
@@ -243,7 +243,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
         ));
 
         header("Location: " . $msp->orders->getPaymentLink());
-    } catch (MultiSafepay_API_Exception $e) {
+    } catch (API_Exception $e) {
         echo "Error " . htmlspecialchars($e->getMessage());
     }
     
@@ -293,7 +293,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     //$amount = commerce_currency_round($amount, commerce_currency_load($currency_code));
 
     // Ensure a default value for the payment_method setting.
-    $settings += array('payment_method' => 'multisafepay');
+    //$settings += array('payment_method' => 'multisafepay');
 
     global $base_url;
     $msp = new MultiSafepay();
@@ -348,8 +348,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
 /**
  * Defines the payment callback.
  *
- * POST callback that decides which URL Moneybookers will redirect the user to
- * after the payment has been submitted.
+ * POST callback that MultiSafepay uses to update the transaction.
  *
  * @param stdClass $order
  *   Order object.
@@ -357,7 +356,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
  *   The payment method instance array associated with this API request.
  *
  * @return array
- *   An url used by Moneybookers to redirect the customer.
+ *   An url used by MultiSafepay to update the transaction
  */
 function commerce_multisafepay_payment_callback($order, $payment_method) {
   
