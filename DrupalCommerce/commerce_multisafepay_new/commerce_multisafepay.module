@@ -30,7 +30,7 @@ function commerce_multisafepay_menu() {
   
   
   $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-shipped'] = array(
-    'title' => 'Refund',
+    'title' => 'Shipped',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('commerce_multisafepay_shipped_form', 3, 5),
     'access callback' => 'commerce_multisafepay_shipped_access',
@@ -103,6 +103,31 @@ function commerce_multisafepay_refund_access($order, $transaction) {
   // Allow access if the user can update payments on this transaction.
   return commerce_payment_transaction_access('update', $transaction);
 }
+
+
+
+
+/**
+ *
+ * Determines access to the refund form for MultiSafepay transactions.
+ *
+ * @param stdClass $order
+ *   The order the transaction is on.
+ * @param stdClass $transaction
+ *   The payment transaction object to be refunded.
+ *
+ * @return bool
+ *   TRUE or FALSE indicating access.
+ */
+function commerce_multisafepay_shipped_access($order, $transaction) {
+	
+	
+	return commerce_payment_transaction_access('update', $transaction);
+}
+
+
+
+
 
 /**
  * Implements hook_commerce_payment_method_info().
