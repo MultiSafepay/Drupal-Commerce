@@ -181,79 +181,10 @@ function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payme
  * @see commerce_multisafepay_submission_redirect()
  */
 function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_method) {
-  drupal_add_js(drupal_get_path('module', 'commerce_multisafepay') . '/commerce_multisafepay.js');
+  	drupal_add_js(drupal_get_path('module', 'commerce_multisafepay') . '/commerce_multisafepay.js');
 
-    
-    $msp = new API_Client;
-    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80");    
-    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
-    
-    try {
-        $order_id = time();
-
-        $order = $msp->orders->post(array(
-            "type" => "redirect",
-            "order_id" => $order_id,
-            "currency" => "EUR",
-            "amount" => 1000,
-            "description" => "Demo Transaction",
-            "var1" => "1",
-            "var2" => "2",
-            "var3" => "3",
-            "items" => "items list",
-            "manual" => "false",
-            "gateway" => "",
-            "days_active" => "30",
-            "payment_options" => array(
-                "notification_url" => "http://www.notification.url",
-                "redirect_url" => "http://www.redirect.url",
-                "cancel_url" => "http://www.cancel.url",
-                "close_window" => "true"
-            ),
-            "customer" => array(
-                "locale" => "nl_NL",
-                "ip_address" => "127.0.0.1",
-                "forwarded_ip" => "127.0.0.1",
-                "first_name" => "Jan",
-                "last_name" => "Modaal",
-                "address1" => "Kraanspoor",
-                "address2" => "",
-                "house_number" => "39",
-                "zip_code" => "1032 SC",
-                "city" => "Amsterdam",
-                "state" => "",
-                "country" => "NL",
-                "phone" => "0208500500",
-                "email" => "test@test.nl",
-            ),
-            "google_analytics" => array(
-                "account" => "UA-XXXXXXXXX",
-            ),
-            "plugin" => array(
-                "shop" => "ideal demo",
-                "shop_version" => "1.0.0",
-                "plugin_version" => "1.0.1",
-                "partner" => "MultiSafepay",
-                "shop_root_url" => "http://www.demo.nl",
-            ),
-            "custom_info" => array(
-                "custom_1" => "value1",
-                "custom_2" => "value2",
-            )
-        ));
-
-        header("Location: " . $msp->orders->getPaymentLink());
-    } catch (API_Exception $e) {
-        echo "Error " . htmlspecialchars($e->getMessage());
-    }
-    
-    
-    
-  //old XML API. to be removed   
-    
-  // Ensure a default value for the payment_method setting.
-  $payment_method['settings'] += array('payment_method' => '');
-  global $language;
+  	  $payment_method['settings'] += array('payment_method' => '');
+  	  global $language, $base_url;
     $wrapper = entity_metadata_wrapper('commerce_order', $order);
     $line_items = $order->commerce_line_items;
 
@@ -270,78 +201,97 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     }
     $item_list .= '</ul>';
 
-    $country = $wrapper->commerce_customer_billing->commerce_customer_address->country->value();
-    $address = $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value();
-    $street = $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value();
-    $number = $wrapper->commerce_customer_billing->commerce_customer_address->premise->value();
-    $postal_code = $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value();
-    $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->first_name->value();
-    $last_name = $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value();
-    $city = $wrapper->commerce_customer_billing->commerce_customer_address->locality->value();
-    $mail = $order->mail;
-    $currency_code = $wrapper->commerce_order_total->currency_code->value();
-    $amount = $wrapper->commerce_order_total->amount->value();
-    $langcode = $language->language . '_' . strtoupper($language->language);
 
-    if (empty($first_name)) {
+	$payment_method['settings'] += array('payment_method' => 'multisafepay');
+
+
+	$first_name = $wrapper->commerce_customer_billing->commerce_customer_address->first_name->value();
+	if (empty($first_name)) {
         $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->name_line->value();
     }
-
     
-    //$amount = commerce_currency_amount_to_decimal($amount, $currency_code);
+    
+        //$amount = commerce_currency_amount_to_decimal($amount, $currency_code);
       // Round the amount to specific currency.
     //$amount = commerce_currency_round($amount, commerce_currency_load($currency_code));
-
-    // Ensure a default value for the payment_method setting.
-    //$settings += array('payment_method' => 'multisafepay');
-
-    global $base_url;
-    $msp = new MultiSafepay();
-    $msp->test = $settings['multisafepay_test'];
-    $msp->merchant['account_id'] = $settings['multisafepay_account_id'];
-    $msp->merchant['site_id'] = $settings['multisafepay_site_id'];
-    $msp->merchant['site_code'] = $settings['multisafepay_secure_code'];
-    $msp->merchant['notification_url'] = multisafepay_helper()->getPostbackURL();
-    $msp->merchant['cancel_url'] = multisafepay_helper()->getResultURL();
-    $msp->merchant['redirect_url'] = multisafepay_helper()->getResultURL();
-    $msp->merchant['close_window'] = true;
-    $msp->customer['locale'] = $langcode;
-    $msp->customer['firstname'] = $first_name;
-    $msp->customer['lastname'] = $last_name;
-    $msp->customer['zipcode'] = $postal_code;
-    $msp->customer['city'] = $city;
-    $msp->customer['email'] = $mail;
-    //$msp->customer['phone']							= $order_info['telephone'];
-    $msp->customer['country'] = $country;
-    $msp->parseCustomerAddress($address);
-    $msp->transaction['id'] = $order->data['commerce_multisafepay_orderid'];
-    $msp->transaction['currency'] = $currency_code;
-    $msp->transaction['amount'] = $amount;
-    $msp->transaction['var1'] = $order->order_id;
-    $msp->transaction['description'] = 'Order #' . $msp->transaction['id'];
-    $msp->transaction['items'] = $item_list;
-    //$msp->plugin_name = 'Drupal Commerce 7.x-1.4';
-   // $msp->version = '(1.0.0)';
-
-    //$msp->plugin['shop'] = 'Drupal Commerce';
-    //$msp->plugin['shop_version'] = 'Unknown';
-    //$msp->plugin['plugin_version'] = '1.0.0';
-   // $msp->plugin['partner'] = '';
-   // $msp->plugin['shop_root_url'] = $base_url;
-
-    $url = $msp->startTransaction();
     
+    
+    $msp = new API_Client;
+    
+    if($payment_method['settings']['multisafepay_test']){
+    	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+    	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    } else{
+	    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    }   
+    
+    try {
 
-    if (!isset($msp->error)) {
-        $form['#action'] = $url;
+        $order = $msp->orders->post(array(
+            "type" => "redirect",
+            "order_id" => $order->order_id,
+            "currency" => $wrapper->commerce_order_total->currency_code->value(),
+            "amount" => $wrapper->commerce_order_total->amount->value(),
+            "description" => 'Order #' . $order->order_id,
+            "var1" => $order->order_id,
+            "var2" => "",
+            "var3" => "",
+            "items" => $item_list,
+            "manual" => "false",
+            "gateway" => "",
+            "days_active" => "30",
+            "payment_options" => array(
+                "notification_url" => "http://www.notification.url",
+                "redirect_url" => "http://www.redirect.url",
+                "cancel_url" => "http://www.cancel.url",
+                "close_window" => "true"
+            ),
+            "customer" => array(
+                "locale" => $language->language . '_' . strtoupper($language->language),
+                "ip_address" => ip_address(),
+                "forwarded_ip" => $_SERVER["REMOTE_ADDR"],
+                "first_name" => $first_name,
+                "last_name" => $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value(),
+                "address1" => $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value(),
+                "address2" => "",
+                "house_number" => $wrapper->commerce_customer_billing->commerce_customer_address->premise->value(),
+                "zip_code" => $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value(),
+                "city" => $wrapper->commerce_customer_billing->commerce_customer_address->locality->value(),
+                "state" => "",
+                "country" => $wrapper->commerce_customer_billing->commerce_customer_address->country->value(),
+                "phone" => "",
+                "email" => $order->mail,
+            ),
+            "google_analytics" => array(
+                "account" => "",
+            ),
+            "plugin" => array(
+                "shop" => "",
+                "shop_version" => "",
+                "plugin_version" => "",
+                "partner" => "",
+                "shop_root_url" => "",
+            ),
+            "custom_info" => array(
+                "custom_1" => "value1",
+                "custom_2" => "value2",
+            )
+        ));
+        
+        print_r($msp->orders);exit;
+
+        $form['#action'] = $msp->orders->getPaymentLink();
         $form['submit'] = array(
             '#type' => 'submit',
             '#value' => t('Start payment'),
         );
         return $form;
-    } else {
-        echo "Error " . $msp->error_code . ": " . $msp->error;
-        exit();
+        
+        exit;
+    } catch (API_Exception $e) {
+        echo "Error " . htmlspecialchars($e->getMessage());
+        exit;
     }
 }
 
