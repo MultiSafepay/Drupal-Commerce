@@ -15,14 +15,19 @@ class API_Object_Orders extends API_Object_Core {
     
     public function get($id) {
         $result = parent::get('orders', $id);
-        $this->success = $result->succes;
+        if(!empty($result->succes))
+        {
+            $this->success = $result->succes;
+        }
         $this->data = $result->data;
         return $this->data;
     }
 
     public function post($body, $endpoint = 'orders') {
         $result = parent::post(json_encode($body), $endpoint);
+        if(isset($result->succes)){
         $this->success = $result->succes;
+        }
         $this->data = $result->data;
         return $this->data;
     }

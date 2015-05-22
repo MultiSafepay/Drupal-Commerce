@@ -14,19 +14,13 @@ require_once dirname(__FILE__) . "/includes/API/Autoloader.php";
  */
 function commerce_multisafepay_menu() {
   $items = array();
-  $items['multisafepay/notification'] = array(
+  $items['multisafepay/notification/%order/'] = array(
     'page callback' => 'commerce_multisafepay_payment_callback',
     'page arguments' => array(2, 3),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
   
-  $items['multisafepay/return'] = array(
-    'page callback' => 'commerce_multisafepay_payment_return',
-    'page arguments' => array(2, 3),
-    'access callback' => TRUE,
-    'type' => MENU_CALLBACK,
-  );
   return $items;
 }
 
@@ -218,7 +212,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     
     $msp = new API_Client;
     
-    if($payment_method['settings']['multisafepay_test']){
+    if($payment_method['settings']['multisafepay_environment']){
     	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
     	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
     } else{
@@ -226,11 +220,14 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
 	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
     }   
     
+    $int_transaction_id = commerce_multisafepay_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
+    
+    
     try {
 
         $order = $msp->orders->post(array(
             "type" => "redirect",
-            "order_id" => $order->order_id,
+            "order_id" => $int_transaction_id,
             "currency" => $wrapper->commerce_order_total->currency_code->value(),
             "amount" => $wrapper->commerce_order_total->amount->value(),
             "description" => 'Order #' . $order->order_id,
@@ -242,9 +239,9 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             "gateway" => "",
             "days_active" => "30",
             "payment_options" => array(
-                "notification_url" => "http://www.notification.url",
-                "redirect_url" => "http://www.redirect.url",
-                "cancel_url" => "http://www.cancel.url",
+                "notification_url" => url('multisafepay/notification/' . $order->order_id . '/?type=initial', array('absolute' => TRUE)),
+                "redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
+                "cancel_url" => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
                 "close_window" => "true"
             ),
             "customer" => array(
@@ -279,7 +276,6 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             )
         ));
         
-        print_r($msp->orders);exit;
 
         $form['#action'] = $msp->orders->getPaymentLink();
         $form['submit'] = array(
@@ -287,11 +283,10 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             '#value' => t('Start payment'),
         );
         return $form;
-        
-        exit;
+       
     } catch (API_Exception $e) {
         echo "Error " . htmlspecialchars($e->getMessage());
-        exit;
+        drupal_exit();
     }
 }
 
@@ -308,67 +303,66 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
  * @return array
  *   An url used by MultiSafepay to update the transaction
  */
-function commerce_multisafepay_payment_callback($order, $payment_method) {
+function commerce_multisafepay_payment_callback($orderid, $payment_method) {
   
 
-    $msp = new MultiSafepay();
-    $msp->test = variable_get('multisafepay_test');
-    $msp->merchant['account_id'] = variable_get('multisafepay_account_id');
-    $msp->merchant['site_id'] = variable_get('multisafepay_site_id');
-    $msp->merchant['site_code'] = variable_get('multisafepay_secure_code');
-    $msp->transaction['id'] = $_GET['transactionid'];
-    $status = $msp->getStatus();
-    $details = $msp->details;
-    //$initial_request									= (isset($_GET['type']) == 'initial');
+	
+	$msp = new API_Client;
+    
+    if(variable_get('multisafepay_environment')){
+    	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+    	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    } else{
+	    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    }   
+    
+    
+	$ext_order = $msp->orders->get($_GET['transactionid']);
+	//print_r($ext_order);
+	
+	
+	$status = $ext_order->status;
+	$transaction_ids= array();
+	$transaction_ids[]= $_GET['transactionid'];
 
-    if (!isset($msp->error)) {
-        $transaction = commerce_payment_transaction_load($_GET['transactionid']);
+    $transactions = commerce_payment_transaction_load_multiple($transaction_ids);
+
+    $transaction= $transactions[$_GET['transactionid']];
+    
+    
+    
+    $created = new DateTime($ext_order->created);
+    $modified = new DateTime($ext_order->modified);
+   
+    
+    
         $order = commerce_order_load($transaction->order_id);
-
-        if ($transaction->remote_status == "INITIALIZED") {
-            if ($transaction->remote_status == "INITIALIZED" && $status == 'completed' && $transaction->status != 'processing') {
-                commerce_checkout_complete($order);
-                $transaction->remote_status = strtoupper($status);
-                $transaction->remote_id = $_GET['transactionid'];
-                $transaction->payment_method = "commerce_payment_multisafepay";
-                $transaction->status = 'processing';
-                $transaction->message = $status;
-                commerce_payment_transaction_save($transaction);
-                /*
-                 * 	http://drupalcontrib.org/api/drupal/contributions!commerce!modules!order!commerce_order.module/function/commerce_order_status_update/7
-                 * 	check this url to test with the options. We need to verify if the emails are send out twice by error.
-                 */
-                commerce_order_status_update($order, 'processing');
-            } elseif ($status == 'initialized') {
+		
+		if ($status == 'completed') {
                 //commerce_checkout_complete($order);
                 $transaction->remote_status = strtoupper($status);
-                $transaction->remote_id = $_GET['transactionid'];
-                $transaction->payment_method = "commerce_payment_multisafepay";
-                $transaction->status = 'pending';
+                $transaction->remote_id = $ext_order->transaction_id;
+                $transaction->payment_method = 'commerce_multisafepay';
+                $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
                 $transaction->message = $status;
+                $transaction->amount = $ext_order->amount;
+				$transaction->currency_code = $ext_order->currency;
+				$transaction->created = $created->getTimestamp();
+				$transaction->changed = $modified->getTimestamp();
                 commerce_payment_transaction_save($transaction);
-                commerce_order_status_update($order, 'pending');
-            } elseif ($status == 'void' || $status == "expired" || $status == "declined") {
-                //commerce_checkout_complete($order);
-                $transaction->remote_status = strtoupper($status);
-                $transaction->remote_id = $_GET['transactionid'];
-                $transaction->payment_method = "commerce_payment_multisafepay";
-                $transaction->status = 'canceled';
-                $transaction->message = $status;
-                commerce_payment_transaction_save($transaction);
-                commerce_order_status_update($order, 'canceled');
-            }
-        }
+         
+        
     }
 
-    if ($initial_request != null) {
+    /*if ($initial_request != null) {
         global $base_url;
         echo '<a href=' . $base_url . '>Klik hier om terug te keren naar de website</a>';
-        exit;
-    } else {
+       drupal_exit();
+    } else {*/
         echo 'OK';
-        exit;
-    }
+        drupal_exit();
+    
 
 
 
@@ -478,6 +472,38 @@ function commerce_multisafepay_request_refund($order, $transaction, $charge) {
   );
 }
 
+
+/**
+ * Creates a payment transaction for the specified charge amount.
+ *
+ * @param $payment_method
+ *   The payment method instance object used to charge this payment.
+ * @param $order
+ *   The order object the payment applies to.
+ * @param $charge
+ *   An array indicating the amount and currency code to charge.
+ */
+function commerce_multisafepay_transaction($payment_method, $order, $charge) 
+{
+	$wrapper = entity_metadata_wrapper('commerce_order', $order);
+	
+	$transaction 										= commerce_payment_transaction_new('multisafepay', $order->order_id);
+	$transaction->instance_id 							= $payment_method['instance_id'];
+	$transaction->amount 								= $charge;
+	$transaction->currency_code 						= $wrapper->commerce_order_total->currency_code->value();
+	$transaction->status 								= COMMERCE_PAYMENT_STATUS_PENDING;
+	$transaction->remote_id 							= "";
+	$transaction->payment_method 						= 'commerce_multisafepay';
+	$transaction->remote_status 						= "MultiSafepay Pre Transaction";
+	$transaction->message 								= t('This order is waiting for processing at MultiSafepay.');
+  
+  
+	commerce_payment_transaction_save($transaction);
+	
+	$order->data['commerce_multisafepay_orderid'] =$transaction->transaction_id;
+	
+	return $transaction->transaction_id;
+}
 
 
 
