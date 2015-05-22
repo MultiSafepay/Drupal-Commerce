@@ -14,12 +14,40 @@ require_once dirname(__FILE__) . "/includes/API/Autoloader.php";
  */
 function commerce_multisafepay_menu() {
   $items = array();
-  $items['multisafepay/notification/%order/'] = array(
+
+  
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-refund'] = array(
+    'title' => 'Refund',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_multisafepay_refund_form', 3, 5),
+    'access callback' => 'commerce_multisafepay_refund_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 4,
+    'file' => 'includes/commerce_multisafepay.admin.inc',
+  );
+  
+  
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-shipped'] = array(
+    'title' => 'Refund',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_multisafepay_shipped_form', 3, 5),
+    'access callback' => 'commerce_multisafepay_shipped_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 4,
+    'file' => 'includes/commerce_multisafepay.admin.inc',
+  );
+
+  $items['multisafepay/callback'] = array(
     'page callback' => 'commerce_multisafepay_payment_callback',
-    'page arguments' => array(2, 3),
+    'page arguments' => array(1),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
+
   
   return $items;
 }
@@ -39,6 +67,11 @@ function commerce_multisafepay_menu() {
  *   TRUE or FALSE indicating access.
  */
 function commerce_multisafepay_refund_access($order, $transaction) {
+	
+	
+	return commerce_payment_transaction_access('update', $transaction);
+	
+	
   if ($transaction->payment_method != 'commerce_multisafepay'
     || empty($transaction->remote_id)
     || !in_array($transaction->remote_status, array('completed','shipped'))
@@ -153,6 +186,7 @@ function commerce_multisafepay_submit_form_validate($payment_method, $pane_form,
  * Redirects the user to the hosted payment page.
  */
 function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payment_method) {
+
   $payment_method['settings'] += array(
     // Return to the previous page when the payment is cancelled.
     'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
@@ -239,7 +273,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             "gateway" => "",
             "days_active" => "30",
             "payment_options" => array(
-                "notification_url" => url('multisafepay/notification/' . $order->order_id . '/?type=initial', array('absolute' => TRUE)),
+                "notification_url" => url('multisafepay/callback', array('absolute' => TRUE)).'?type=initial',
                 "redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
                 "cancel_url" => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)),
                 "close_window" => "true"
@@ -303,10 +337,8 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
  * @return array
  *   An url used by MultiSafepay to update the transaction
  */
-function commerce_multisafepay_payment_callback($orderid, $payment_method) {
-  
+function commerce_multisafepay_payment_callback() {
 
-	
 	$msp = new API_Client;
     
     if(variable_get('multisafepay_environment')){
@@ -360,8 +392,7 @@ function commerce_multisafepay_payment_callback($orderid, $payment_method) {
         echo '<a href=' . $base_url . '>Klik hier om terug te keren naar de website</a>';
        drupal_exit();
     } else {*/
-        echo 'OK';
-        drupal_exit();
+        return 'OK';
     
 
 
