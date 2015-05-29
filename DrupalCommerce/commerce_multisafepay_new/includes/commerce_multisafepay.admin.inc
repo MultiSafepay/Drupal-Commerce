@@ -102,12 +102,12 @@ function commerce_multisafepay_refund_form_validate($form, &$form_state) {
 function commerce_multisafepay_refund_form_submit($form, &$form_state) {
     $msp = new API_Client;
     $payment_method = $form_state['payment_method'];
-
-    if ($payment_method['settings']['multisafepay_environment']) {
-        $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80");
+    
+    if (!$payment_method['settings']['multisafepay_environment']) {
+        $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
         $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/');
     } else {
-        $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80");
+        $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
         $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/');
     }
 

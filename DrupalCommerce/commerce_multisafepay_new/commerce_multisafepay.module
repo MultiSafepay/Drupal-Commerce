@@ -161,10 +161,19 @@ function commerce_multisafepay_shipped_access($order, $transaction) {
  */
 function commerce_multisafepay_commerce_payment_method_info() { 
   $payment_methods = array();
+  
+  $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+  
+  if(!empty($payment['settings']['multisafepay_title']))
+  {
+	  $gateway_title= $payment['settings']['multisafepay_title'];
+  }else{
+	  $gateway_title= 'MultiSafepay';
+  }
 
     $payment_methods['commerce_multisafepay'] = array(
         'title' => 'multisafepay',
-        'display_title' => variable_get('multisafepay_title', 'multisafepay '),
+        'display_title' => $gateway_title,
         'description' => t('Enable payments using multisafepay Global payments'),
         'terminal' => FALSE,
         'callbacks' => array(),
@@ -296,11 +305,11 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     
     $msp = new API_Client;
     
-    if($payment_method['settings']['multisafepay_environment']){
-    	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+    if(!$payment_method['settings']['multisafepay_environment']){
+    	$msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']); 
     	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
     } else{
-	    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+	    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']); 
 	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
     }   
     
@@ -316,8 +325,6 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             "amount" => $wrapper->commerce_order_total->amount->value(),
             "description" => 'Order #' . $order->order_id,
             "var1" => $order->order_id,
-            "var2" => "",
-            "var3" => "",
             "items" => $item_list,
             "manual" => "false",
             "gateway" => "",
@@ -344,36 +351,30 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
                 "phone" => "",
                 "email" => $order->mail,
             ),
-            "google_analytics" => array(
-                "account" => "",
-            ),
             "plugin" => array(
-                "shop" => "",
+                "shop" => "Drupal Commerce",
                 "shop_version" => "",
                 "plugin_version" => "",
                 "partner" => "",
                 "shop_root_url" => "",
             ),
-            "custom_info" => array(
-                "custom_1" => "value1",
-                "custom_2" => "value2",
-            )
         ));
-        
-
         $form['#action'] = $msp->orders->getPaymentLink();
-        $form['submit'] = array(
+		$form['submit'] = array(
             '#type' => 'submit',
             '#value' => t('Start payment'),
-        );
-        return $form;
+			);
        
     } catch (API_Exception $e) {
-        
-        //TODO SAVE Failed transaction for order in db
-        echo "Error " . htmlspecialchars($e->getMessage());
-        drupal_exit();
+    	drupal_set_message(t('Transaction error: @error', array('@error' => htmlspecialchars($e->getMessage()))), 'error', false);
+    	$form_state['redirect'] = 'checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'];
+    	drupal_goto($form_state['redirect']);
+
     }
+    
+
+    
+    return $form;
 }
 
 /**
