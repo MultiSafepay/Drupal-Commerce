@@ -398,13 +398,15 @@ function commerce_multisafepay_payment_callback() {
 
 	$msp = new API_Client;
     
-    if(variable_get('multisafepay_environment')){
-    	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
-    	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    $payment_method = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    
+   if(!$payment_method['settings']['multisafepay_environment']){
+    	$msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']); 
+    	$msp->setApiUrl('https://api.multisafepay.com/v1/json/'); 
     } else{
-	    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
-	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
-    }   
+	    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']); 
+	    $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/'); 
+    } 
     
     
 	$ext_order = $msp->orders->get($_GET['transactionid']);
