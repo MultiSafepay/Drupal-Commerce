@@ -18,25 +18,32 @@ function commerce_multisafepay_refund_form($form, &$form_state, $order, $transac
 
     foreach (commerce_payment_transaction_load_multiple(array(), array('order_id' => $order->order_id)) as $transaction) {
         // If the payment transaction status indicates it should include the
+
         // current transaction in the total...
         if ($transaction_statuses[$transaction->status]['total']) {
             // Add the transaction to its currency's running total if it exists...
             if (isset($totals[$transaction->currency_code])) {
                 $totals[$transaction->currency_code] += $transaction->amount;
+                
             } else {
                 // Or begin a new running total for the currency.
                 $totals[$transaction->currency_code] = $transaction->amount;
+                if($transaction->amount >= 0){
+                	$totals['captured_total'] += $transaction->amount;
+                }
             }
         }
     }
 
+    
 
+    $orig_amount = commerce_currency_amount_to_decimal($totals['captured_total'], $transaction->currency_code);
     $default_amount = commerce_currency_amount_to_decimal($totals[$transaction->currency_code], $transaction->currency_code);
 
     $form['amount'] = array(
         '#type' => 'textfield',
         '#title' => t('Refund amount'),
-        '#description' => t('Enter the amount to be refunded.'),
+        '#description' => t('Enter the amount to be refunded. Origional transaction amount: <b>').$transaction->currency_code.' '. $orig_amount . t('</b>. Maximum amount available for refunding: <b>').  $transaction->currency_code.' ' .$default_amount.'</b>',
         '#default_value' => $default_amount,
         '#field_suffix' => check_plain($transaction->currency_code),
         '#size' => 16,
