@@ -390,7 +390,6 @@ function commerce_multisafepay_payment_callback() {
     $modified = new DateTime($ext_order->modified);
    
     
-    
         $order = commerce_order_load($transaction->order_id);
 		
 		if ($status == 'completed') {
@@ -399,7 +398,7 @@ function commerce_multisafepay_payment_callback() {
                 $transaction->remote_id = $ext_order->transaction_id;
                 $transaction->payment_method = 'commerce_multisafepay';
                 $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-                $transaction->message = $status;
+                $transaction->message = ucfirst($status).' by using: '.$ext_order->payment_details->type;
                 $transaction->amount = $ext_order->amount;
 				$transaction->currency_code = $ext_order->currency;
 				$transaction->created = $created->getTimestamp();
