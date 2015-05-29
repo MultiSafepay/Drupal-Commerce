@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay Pay After Delivery
+description = Integrates MultiSafepay Pay After Delivery Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
