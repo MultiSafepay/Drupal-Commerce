@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay Bank Transfer
+description = Integrates MultiSafepay Bank Transfer Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
