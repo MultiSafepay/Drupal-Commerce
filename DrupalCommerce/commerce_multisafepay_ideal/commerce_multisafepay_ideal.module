@@ -1,0 +1,154 @@
+<?php
+
+require_once dirname(__FILE__) . "/../commerce_multisafepay/commerce_multisafepay.module";
+/**
+ * @file
+ * Integrates MultiSafepay with Drupal Commerce.
+ */
+
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ *
+ * Defines Multisafepay's Frontend payment method.
+ */
+function commerce_multisafepay_ideal_commerce_payment_method_info()
+{
+    $payment_methods = array();
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_ideal|commerce_payment_commerce_multisafepay_ideal');
+    
+    if (!empty($payment['settings']['multisafepay_title'])) {
+        $gateway_title = $payment['settings']['multisafepay_title'];
+    } else {
+        $gateway_title = 'iDEAL';
+    }
+    
+   
+    
+    
+    $payment_methods['commerce_multisafepay_ideal'] = array(
+        'title' => 'MultiSafepay iDEAL',
+        'display_title' => $gateway_title,
+        'description' => t('Enable payments using multisafepay Global payments'),
+        'terminal' => FALSE,
+        'callbacks' => array(),
+        'offsite' => TRUE,
+        'offsite_autoredirect' => TRUE
+    );
+    return $payment_methods;
+}
+
+
+/**
+ * Payment method callback: Generates the payment method settings form.
+ */
+function commerce_multisafepay_ideal_settings_form($settings = NULL)
+{
+    $form     = array();
+    $settings = (array) $settings + array(
+        'multisafepay_title' => ''
+    );
+    
+    
+    $form['multisafepay_title'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Title in Checkout',
+        '#default_value' => isset($settings['multisafepay_title']) ? $settings['multisafepay_title'] : t('multisafepay '),
+        '#description' => t('The title of the payment method displayed to customers in checkout')
+    );
+ 
+    
+    return $form;
+}
+
+
+function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
+    global $base_url;
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment_method['settings'] += $payment['settings'];
+    
+    
+    
+    $msp = new API_Client;
+    if (!$payment_method['settings']['multisafepay_environment']) {
+        $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
+        $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
+    } else {
+        $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+        $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
+    }
+    $iDealIssuers = $msp->issuers->get();
+    $issuers = array();
+    
+    
+    
+    foreach ($iDealIssuers as $issuer) {
+        $issuers[$issuer->code] = t($issuer->description);
+    }
+
+    $form = array();
+    $form['issuer_holder'] = array(
+            '#type' => 'item',
+            '#title' => '',
+            '#description' => '<div id="issuer"><img src="' . $base_url . '/modules/commerce_multisafepay/images/veilig-betalen-ideal.png" border="0" width="252" height="69"/><br /><b class="bigger">' . t('Kies uw bank') . '</b><div>'
+        );
+
+        $form['issuer'] = array(
+            //'#required' => TRUE,
+            '#type' => 'select',
+            //'#title' => t('Select your payment method'),
+            //'#default_value' => variable_get('multisafepay_gateway', 'IDEAL'),
+            '#options' => $issuers,
+        );
+    $form['dummy'] = array(
+        '#type' => 'hidden',
+        '#value' => 'dummy'
+    );
+
+    return $form;
+}
+
+
+/**
+ * Redirects the user to the hosted payment page.
+ */
+function commerce_multisafepay_ideal_redirect_form($form, &$form_state, $order, $payment_method)
+{
+    $payment_method['settings'] += array(
+        // Return to the previous page when the payment is cancelled.
+        'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
+            'absolute' => TRUE
+        )),
+        // Return to the payment redirect page for processing successful payments.
+        'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+            'absolute' => TRUE
+        )),
+        // Specify the current payment method instance ID in the notify_url.
+        'payment_method' => $payment_method['instance_id'],
+        'gateway' => 'IDEAL'
+            
+    );
+    if (isset($form_state['build_info']['args'][0]->data['commerce_multisafepay_ideal']['issuer'])) {
+        $issuer = $form_state['build_info']['args'][0]->data['commerce_multisafepay_ideal']['issuer'];
+        $payment_method['settings'] += array(
+            'issuer' => $issuer,
+            'type' => 'direct'
+       );
+    }else{
+        $payment_method['settings'] += array(
+            'issuer' => '',
+            'type' => 'redirect'
+       );
+    }
+    
+
+    return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+}
+
+
+/**
+ * Payment method callback: checkout form submission.
+ */
+function commerce_multisafepay_ideal_submit_form_submit($payment_method, $pane_form, $pane_values, $order, $charge) {
+    $order->data['commerce_multisafepay_ideal'] = $pane_values;
+}
