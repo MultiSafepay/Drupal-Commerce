@@ -37,6 +37,7 @@ class API_Client {
         $url = $this->api_url . $api_method;
         $ch = curl_init($url);
         
+        
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_ENCODING, "");
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);

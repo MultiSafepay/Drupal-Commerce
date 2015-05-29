@@ -264,10 +264,16 @@ function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payme
             'absolute' => TRUE
         )),
         // Specify the current payment method instance ID in the notify_url.
-        'payment_method' => $payment_method['instance_id']
+        'payment_method' => $payment_method['instance_id'],
+        'gateway' => '',
+        'type' => 'redirect',
+        'issuer'=> ''
     );
+    
     return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
 }
+
+
 
 
 /**
@@ -286,6 +292,10 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     $payment_method['settings'] += array(
         'payment_method' => ''
     );
+    
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment_method['settings'] +=$payment['settings'];
+    
     global $language, $base_url;
     $wrapper    = entity_metadata_wrapper('commerce_order', $order);
     $line_items = $order->commerce_line_items;
@@ -324,7 +334,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     
     try {
         $order = $msp->orders->post(array(
-            "type" => "redirect",
+            "type" => $payment_method['settings']['type'],
             "order_id" => $int_transaction_id,
             "currency" => $wrapper->commerce_order_total->currency_code->value(),
             "amount" => $wrapper->commerce_order_total->amount->value(),
@@ -332,7 +342,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
             "var1" => $order->order_id,
             "items" => $item_list,
             "manual" => "false",
-            "gateway" => "",
+            "gateway" => $payment_method['settings']['gateway'],
             "days_active" => "30",
             "payment_options" => array(
                 "notification_url" => url('multisafepay/callback', array(
@@ -368,15 +378,14 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
                 "plugin_version" => "2.0.0",
                 "partner" => "",
                 "shop_root_url" => ""
-            )
+            ),
+            "gateway_info" => array(
+                "issuer_id" => $payment_method['settings']['issuer'],
+            ),
         ));
         
         
-        $form['#action'] = $msp->orders->getPaymentLink();
-        $form['submit']  = array(
-            '#type' => 'submit',
-            '#value' => t('Start payment')
-        );
+       
         
     }
     catch (API_Exception $e) {
@@ -386,7 +395,13 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
         )), 'error', false);
         $form_state['redirect'] = 'checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'];
     }
-
+   
+    
+	 $form['#action'] = $msp->orders->getPaymentLink();
+        $form['submit']  = array(
+            '#type' => 'submit',
+            '#value' => t('Start payment')
+        );
     return $form;
 }
 
@@ -446,7 +461,8 @@ function commerce_multisafepay_payment_callback()
     echo '<a href=' . $base_url . '>Klik hier om terug te keren naar de website</a>';
     drupal_exit();
     } else {*/
-    return 'OK';
+    echo 'ok';
+    drupal_exit();
 }
 
 
