@@ -307,14 +307,14 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     
     if(!$payment_method['settings']['multisafepay_environment']){
     	$msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']); 
-    	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    	$msp->setApiUrl('https://api.multisafepay.com/v1/json/'); 
     } else{
 	    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']); 
-	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+	    $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/'); 
     }   
     
     $int_transaction_id = commerce_multisafepay_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
-    
+
     
     try {
 
@@ -359,6 +359,9 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
                 "shop_root_url" => "",
             ),
         ));
+        
+        
+        
         $form['#action'] = $msp->orders->getPaymentLink();
 		$form['submit'] = array(
             '#type' => 'submit',
@@ -366,9 +369,10 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
 			);
        
     } catch (API_Exception $e) {
+	    echo $e->getMessage();exit;
     	drupal_set_message(t('Transaction error: @error', array('@error' => htmlspecialchars($e->getMessage()))), 'error', false);
     	$form_state['redirect'] = 'checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'];
-    	drupal_goto($form_state['redirect']);
+    	//drupal_goto($form_state['redirect']);
 
     }
     

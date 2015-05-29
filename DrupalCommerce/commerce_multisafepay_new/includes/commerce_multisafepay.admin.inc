@@ -105,10 +105,10 @@ function commerce_multisafepay_refund_form_submit($form, &$form_state) {
     
     if (!$payment_method['settings']['multisafepay_environment']) {
         $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
-        $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/');
+        $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
     } else {
         $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
-        $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/');
+        $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
     }
 
     $order_int = $form_state['order'];
