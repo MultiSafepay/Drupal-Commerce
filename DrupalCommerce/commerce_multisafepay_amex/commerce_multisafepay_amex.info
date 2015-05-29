@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay American Express
+description = Integrates MultiSafepay American Express Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
