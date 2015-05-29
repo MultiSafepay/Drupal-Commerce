@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay VISA
+description = Integrates MultiSafepay VISA Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
