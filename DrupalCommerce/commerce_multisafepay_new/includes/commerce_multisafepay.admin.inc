@@ -15,7 +15,26 @@ function commerce_multisafepay_refund_form($form, &$form_state, $order, $transac
   $form_state['transaction'] = $transaction;
   $form_state['payment_method'] = commerce_payment_method_instance_load($transaction->instance_id);
 
-  $default_amount = commerce_currency_amount_to_decimal($transaction->amount, $transaction->currency_code);
+
+   $transaction_statuses = commerce_payment_transaction_statuses();
+
+    foreach (commerce_payment_transaction_load_multiple(array(), array('order_id' => $order->order_id)) as $transaction) {
+      // If the payment transaction status indicates it should include the
+      // current transaction in the total...
+      if ($transaction_statuses[$transaction->status]['total']) {
+        // Add the transaction to its currency's running total if it exists...
+        if (isset($totals[$transaction->currency_code])) {
+          $totals[$transaction->currency_code] += $transaction->amount;
+        }
+        else {
+          // Or begin a new running total for the currency.
+          $totals[$transaction->currency_code] = $transaction->amount;
+        }
+      }
+    }
+	    
+
+  $default_amount = commerce_currency_amount_to_decimal($totals[$transaction->currency_code], $transaction->currency_code);
 
   $form['amount'] = array(
     '#type' => 'textfield',
@@ -67,52 +86,68 @@ function commerce_multisafepay_refund_form_validate($form, &$form_state) {
  * Submit handler: process a refund request.
  */
 function commerce_multisafepay_refund_form_submit($form, &$form_state) {
-  $order = $form_state['order'];
+	
+	
+	 $msp = new API_Client;
+    
+    
+    
+    $payment_method = $form_state['payment_method'];
+    
+    
+    if($payment_method['settings']['multisafepay_environment']){
+    	$msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+    	$msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    } else{
+	    $msp->setApiKey("10324b12f0386ab3d9fc4090fcc9545e4f424a80"); 
+	    $msp->setApiUrl('http://devapi.multisafepay.com/v1/json/'); 
+    }   
+    
+    
+	
+  $order_int = $form_state['order'];
   $transaction = $form_state['transaction'];
-  $payment_method = $form_state['payment_method'];
+  
+  
 
-  // Convert the amout to the commerce format.
-  $amount = commerce_currency_decimal_to_amount($form_state['values']['amount'], $transaction->currency_code);
+  
 
-  $charge = array(
-    'amount' => commerce_moneybookers_price_amount($amount, $transaction->currency_code),
-    'currency' => $transaction->currency_code,
-  );
+  $amount = $form_state['values']['amount']*100; 
 
-  // Build a name-value pair array for this transaction.
-  /*$data = commerce_multisafepay_request_refund($order, $transaction, $charge);
-
-  // Submit the capture request to Moneybookers.
-  $response = commerce_multisafepay_api_request($payment_method, $data);
-
-  if (!isset($response['PROCESSING.RESULT']) || $response['PROCESSING.RESULT'] != 'ACK' || $response['PROCESSING.CODE'] != 'CC.RF.90.00') {
-    // Display an error message but leave the transaction pending.
-    drupal_set_message(t('Refund failed. @reason', array('@reason' => check_plain($response['PROCESSING.RETURN']))), 'error');
-
-    // Save the failure response message to the original transaction.
-    $transaction->payload[REQUEST_TIME . '-refund'] = $response;
-    commerce_payment_transaction_save($transaction);
-  }
-  else {
+  
+  //the transaction status was competed, now we will refund the transaction
+  $endpoint = 'orders/' . $transaction->transaction_id . '/refunds';
+  	try {
+            $order = $msp->orders->post(array(
+                "type" => "refund",
+                "amount" => $amount,
+                "currency" => $transaction->currency_code,
+                "description" => "Refund for order: ". $transaction->order_id,
+                    ), $endpoint);
+        } catch (MultiSafepay_API_Exception $e) {
+            drupal_set_message(t('Refund failed. @reason', array('@reason' => $e->getMessage())), 'error');
+        }
+  
+  
+  
     // Create a new transaction to record the credit.
-    $credit_transaction = commerce_payment_transaction_new($payment_method['method_id'], $order->order_id);
+    $credit_transaction = commerce_payment_transaction_new($payment_method['method_id'], $order_int->order_id);
     $credit_transaction->instance_id = $payment_method['instance_id'];
-    $credit_transaction->remote_id = $response['IDENTIFICATION.UNIQUEID'];
-    $credit_transaction->amount = $amount * -1;
+    $credit_transaction->remote_id = $order->transaction_id;
+    $credit_transaction->amount = ($amount * -1);
     $credit_transaction->currency_code = $transaction->currency_code;
-    $credit_transaction->payload[REQUEST_TIME] = $response;
     $credit_transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $credit_transaction->remote_status = $response['PROCESSING.CODE'];
-    $credit_transaction->message = t('Refunded: @date', array('@date' => format_date(REQUEST_TIME, 'short')));
+    $credit_transaction->remote_status = 'refunded';
+    $credit_transaction->message = t('Transaction (partially) refunded');
 
     // Save the credit transaction.
     commerce_payment_transaction_save($credit_transaction);
 
-    drupal_set_message(t('Refund for @amount issued successfully.', array('@amount' => commerce_currency_format($amount, $transaction->currency_code))));
-  }
+    drupal_set_message(t('Refund for @amount issued successfully.', array('@amount' => commerce_currency_format(($amount), $transaction->currency_code))));
+  
 
   // Save the updated original transaction.
   commerce_payment_transaction_save($transaction);
-*/
-  $form_state['redirect'] = 'admin/commerce/orders/' . $order->order_id . '/payment';
+
+  $form_state['redirect'] = 'admin/commerce/orders/' . $order_int->order_id . '/payment';
 }

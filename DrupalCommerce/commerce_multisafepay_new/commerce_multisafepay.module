@@ -68,16 +68,13 @@ function commerce_multisafepay_menu() {
  */
 function commerce_multisafepay_refund_access($order, $transaction) {
 	
-	
-	return commerce_payment_transaction_access('update', $transaction);
-	
-	
   if ($transaction->payment_method != 'commerce_multisafepay'
     || empty($transaction->remote_id)
-    || !in_array($transaction->remote_status, array('completed','shipped'))
+    || !in_array($transaction->remote_status, array('COMPLETED','SHIPPED'))
     || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
     return FALSE;
   }
+
 
   // Return FALSE if the transaction was not a success.
   if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
@@ -90,15 +87,16 @@ function commerce_multisafepay_refund_access($order, $transaction) {
   if ($balance['amount'] >= $order_total['amount']) {
     return FALSE;
   }
+  
 
   if ($transaction->amount <= 0) {
     return FALSE;
   }
 
   // Return FALSE if it is more than 60 days since the original transaction.
-  /*if (REQUEST_TIME - $transaction->created > 86400 * 60) {
+  if (REQUEST_TIME - $transaction->created > 86400 * 60) {
     return FALSE;
-  }*/
+  }
 
   // Allow access if the user can update payments on this transaction.
   return commerce_payment_transaction_access('update', $transaction);
@@ -109,7 +107,7 @@ function commerce_multisafepay_refund_access($order, $transaction) {
 
 /**
  *
- * Determines access to the refund form for MultiSafepay transactions.
+ * Determines access to the shipped form for MultiSafepay transactions.
  *
  * @param stdClass $order
  *   The order the transaction is on.
@@ -344,6 +342,8 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
         return $form;
        
     } catch (API_Exception $e) {
+        
+        //TODO SAVE Failed transaction for order in db
         echo "Error " . htmlspecialchars($e->getMessage());
         drupal_exit();
     }
@@ -384,10 +384,7 @@ function commerce_multisafepay_payment_callback() {
 	$transaction_ids[]= $_GET['transactionid'];
 
     $transactions = commerce_payment_transaction_load_multiple($transaction_ids);
-
     $transaction= $transactions[$_GET['transactionid']];
-    
-    
     
     $created = new DateTime($ext_order->created);
     $modified = new DateTime($ext_order->modified);
@@ -505,28 +502,13 @@ function commerce_multisafepay_payment_callback() {
 
 
 
-/**
- * Builds a request array for the Refund type.
- *
- * @param stdClass $order
- *   Order object.
- * @param stdClass $transaction
- *   Transaction object.
- * @param array $charge
- *   An array with the transaction amount and currency.
- *
- * @return array
- *   Array of parameters to be sent for a refund request.
- */
-function commerce_multisafepay_request_refund($order, $transaction, $charge) {
-  return array(
-    'PAYMENT.CODE' => 'CC.RF',
-    'IDENTIFICATION.TRANSACTIONID' => $order->order_number,
-    'IDENTIFICATION.REFERENCEID' => $transaction->remote_id,
-    'PRESENTATION.AMOUNT' => $charge['amount'],
-    'PRESENTATION.CURRENCY' => $charge['currency'],
-  );
+function hook_commerce_payment_order_paid_in_full($order, $transaction) {
+  // No example.
 }
+
+
+
+
 
 
 /**
@@ -552,7 +534,7 @@ function commerce_multisafepay_transaction($payment_method, $order, $charge)
 	$transaction->payment_method 						= 'commerce_multisafepay';
 	$transaction->remote_status 						= "MultiSafepay Pre Transaction";
 	$transaction->message 								= t('This order is waiting for processing at MultiSafepay.');
-  
+ 
   
 	commerce_payment_transaction_save($transaction);
 	
