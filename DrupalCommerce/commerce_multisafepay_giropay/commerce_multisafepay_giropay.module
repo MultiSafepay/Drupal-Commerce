@@ -1,0 +1,71 @@
+<?php
+require_once dirname(__FILE__) . "/../commerce_multisafepay/commerce_multisafepay.module";
+/**
+ * @file
+ * Integrates MultiSafepay with Drupal Commerce.
+ */
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ *
+ * Defines Multisafepay's Frontend payment method.
+ */
+function commerce_multisafepay_giropay_commerce_payment_method_info()
+{
+    $payment_methods = array();
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_giropay|commerce_payment_commerce_multisafepay_giropay');
+    if (!empty($payment['settings']['multisafepay_title'])) {
+        $gateway_title = $payment['settings']['multisafepay_title'];
+    } else {
+        $gateway_title = 'GiroPay';
+    }
+    
+    $payment_methods['commerce_multisafepay_giropay'] = array(
+        'title' => 'MultiSafepay GiroPay',
+        'display_title' => $gateway_title,
+        'description' => t('Enable payments using multisafepay Global payments'),
+        'terminal' => FALSE,
+        'callbacks' => array(),
+        'offsite' => TRUE,
+        'offsite_autoredirect' => TRUE
+    );
+    return $payment_methods;
+}
+
+/**
+ * Payment method callback: Generates the payment method settings form.
+ */
+function commerce_multisafepay_giropay_settings_form($settings = NULL)
+{
+    $form     = array();
+    $settings = (array) $settings + array(
+        'multisafepay_title' => ''
+    );
+    $form['multisafepay_title'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Title in Checkout',
+        '#default_value' => isset($settings['multisafepay_title']) ? $settings['multisafepay_title'] : t('multisafepay '),
+        '#description' => t('The title of the payment method displayed to customers in checkout')
+    );
+    return $form;
+}
+
+/**
+ * Redirects the user to the hosted payment page.
+ */
+function commerce_multisafepay_giropay_redirect_form($form, &$form_state, $order, $payment_method)
+{
+    $payment_method['settings'] += array(
+        'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
+            'absolute' => TRUE
+        )),
+        'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+            'absolute' => TRUE
+        )),
+        'payment_method' => $payment_method['instance_id'],
+        'gateway' => 'GIROPAY',
+        'issuer' => '',
+        'type' => 'redirect'
+    );
+    return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+}
