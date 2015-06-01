@@ -376,7 +376,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
 								);
 							
 			}
-			else {
+			elseif (module_exists('commerce_product') && $line_item_wrapper->type->value() == 'product') {
 				$price = $line_item_wrapper->commerce_unit_price->value();
 				
 				$tax_rate = 'BTW0';
@@ -396,6 +396,36 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
 								"quantity" => round($line_item_wrapper->quantity->value()),
 								"merchant_item_id" => $line_item_wrapper->commerce_product->sku->value(),
 								"tax_table_selector" => $tax_rate,
+								"weight" => array(
+									"unit" => "KB",
+									"value" => "0",
+									)
+								);
+			}elseif (module_exists('commerce_discount') && $line_item_wrapper->type->value() == 'commerce_discount') {
+				$price = $line_item_wrapper->commerce_unit_price->value();
+						    
+		  		$items['items'][] = array(
+                    			"name" => commerce_line_item_title($line_item_wrapper->value()),
+								"description" => "",
+								"unit_price" => $price['amount']/100,
+								"quantity" => round($line_item_wrapper->quantity->value()),
+								"merchant_item_id" => 'discount',
+								"tax_table_selector" => 'BTW0',
+								"weight" => array(
+									"unit" => "KB",
+									"value" => "0",
+									)
+								);
+			}elseif (module_exists('commerce_coupon') && $line_item_wrapper->type->value() == 'commerce_coupon') {
+				$price = $line_item_wrapper->commerce_unit_price->value();
+						    
+		  		$items['items'][] = array(
+                    			"name" => commerce_line_item_title($line_item_wrapper->value()),
+								"description" => "",
+								"unit_price" => $price['amount']/100,
+								"quantity" => round($line_item_wrapper->quantity->value()),
+								"merchant_item_id" => 'coupon',
+								"tax_table_selector" => 'BTW0',
 								"weight" => array(
 									"unit" => "KB",
 									"value" => "0",
