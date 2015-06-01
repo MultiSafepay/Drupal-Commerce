@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay Boekenbon
+description = Integrates MultiSafepay Boekenbon Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
