@@ -134,7 +134,7 @@ function commerce_multisafepay_shipped_access($order, $transaction)
 {
     if ($transaction->payment_method != 'commerce_multisafepay' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
         'COMPLETED'
-    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
+    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS || $transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' || $transaction->instance_id != 'commerce_multisafepay_klarna|commerce_payment_commerce_multisafepay_klarna') {
         return FALSE;
     }
     
@@ -156,7 +156,6 @@ function commerce_multisafepay_shipped_access($order, $transaction)
     
     // Allow access if the user can update payments on this transaction.
     return commerce_payment_transaction_access('update', $transaction);
-    
 }
 
 
