@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay Fashion Cheque
+description = Integrates MultiSafepay Fashion Cheque Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
