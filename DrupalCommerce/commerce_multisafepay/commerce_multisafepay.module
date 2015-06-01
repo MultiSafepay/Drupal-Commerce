@@ -132,12 +132,17 @@ function commerce_multisafepay_refund_access($order, $transaction)
  */
 function commerce_multisafepay_shipped_access($order, $transaction)
 {
+
     if ($transaction->payment_method != 'commerce_multisafepay' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
         'COMPLETED'
-    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS || $transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' || $transaction->instance_id != 'commerce_multisafepay_klarna|commerce_payment_commerce_multisafepay_klarna') {
+    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
         return FALSE;
     }
+    if($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' && $transaction->instance_id != 'commerce_multisafepay_klarna|commerce_payment_commerce_multisafepay_klarna'){
+	    return FALSE;
+    }
     
+
     // Return FALSE if the transaction was not a success.
     if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
         return FALSE;
