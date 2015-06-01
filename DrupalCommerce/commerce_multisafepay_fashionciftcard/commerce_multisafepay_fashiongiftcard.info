@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay Fashion Giftcard
+description = Integrates MultiSafepay Fashion Giftcard Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
