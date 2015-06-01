@@ -142,3 +142,54 @@ function commerce_multisafepay_refund_form_submit($form, &$form_state)
     commerce_payment_transaction_save($transaction);
     $form_state['redirect'] = 'admin/commerce/orders/' . $order_int->order_id . '/payment';
 }
+
+
+
+
+
+function commerce_multisafepay_shipped_form($form, &$form_state, $order, $transaction)
+{
+	$form_state['order']          = $order;
+    $form_state['transaction']    = $transaction;
+    $form_state['payment_method'] = commerce_payment_method_instance_load($transaction->instance_id);
+    
+	$msp            = new API_Client;
+
+    $payment_method = $payment_method = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    
+    if (!$payment_method['settings']['multisafepay_environment']) {
+        $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
+        $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
+    } else {
+        $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+        $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
+    }
+
+	$transactionid = $transaction->transaction_id;
+	$endpoint = 'orders/' . $transactionid;
+	
+	try {
+    $order = $msp->orders->patch(
+            array(
+                "tracktrace_code" => 'null',
+                "carrier"=> 'null',
+                "ship_date"=> time(),
+                "reason" => 'Shipped'
+            ), $endpoint);
+	} catch (MultiSafepay_API_Exception $e) {
+        drupal_set_message(t('Failed to set transaction to Shipped. @reason', array(
+            '@reason' => $e->getMessage()
+        )), 'error');
+    }
+
+	$transaction->remote_status  = 'SHIPPED';
+   
+    commerce_payment_transaction_save($transaction);
+
+    drupal_set_message(t('Transaction set to shipped at MultiSafepay', array()));
+    drupal_goto('admin/commerce/orders/' . $form_state['order']->order_id . '/payment');
+}
+
+
+
+
