@@ -156,6 +156,7 @@ function commerce_multisafepay_shipped_access($order, $transaction)
     
     // Allow access if the user can update payments on this transaction.
     return commerce_payment_transaction_access('update', $transaction);
+    
 }
 
 
@@ -310,6 +311,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
         }
     }
     $item_list .= '</ul>';
+    $item_list= '';
     
     $payment_method['settings'] += array(
         'payment_method' => 'multisafepay'
@@ -329,10 +331,102 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
         $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
     }
     
+    
     $int_transaction_id = commerce_multisafepay_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
     
+    
+    $gateway_info = array();
+	$gateway_info = array(
+            //"birthday" => "1980-01-30",
+            //"bank_account" => "2884455",
+            //"phone" => "0208500500",
+            // "referrer" => "http://google.nl",
+            //"user_agent" => "msp01",
+            "email"	=> $order->mail,
+            "issuer_id" => $payment_method['settings']['issuer'],
+        );
+    
+    $items= array();
+	$tax_tables = array();
+	$tax_applied_rates = array();
+    $tax_applied_rates['BTW0'] ='BTW0';
+    
+    if($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
+    {
+	    foreach ($wrapper->commerce_line_items as $delta => $line_item_wrapper) {
+        	if (module_exists('commerce_shipping') && $line_item_wrapper->type->value() == 'shipping') {
+	        	$shipping_price = $line_item_wrapper->commerce_unit_price->value();
+	        	if (function_exists('commerce_tax_components')) {
+			      $tax = commerce_tax_components($shipping_price['data']['components']);
+			      $tax_rate = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTW0';
+			      $taxed_amount = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount']: 0;
+			      $tax_applied_rates['shipping'] = $tax_rate;
+			    }
+		  		$items['items'][] = array(
+                    			"name" => commerce_line_item_title($line_item_wrapper->value()),
+								"description" => "",
+								"unit_price" => ($shipping_price['amount'] - $taxed_amount)/100,
+								"quantity" => "1",
+								"merchant_item_id" => "msp-shipping",
+								"tax_table_selector" => $tax_applied_rates['shipping'],
+								"weight" => array(
+									"unit" => "KB",
+									"value" => "0",
+									)
+								);
+							
+			}
+			else {
+				$price = $line_item_wrapper->commerce_unit_price->value();
+				
+				$tax_rate = 'BTW0';
+	        	if (function_exists('commerce_tax_components')) {
+			      	$tax = commerce_tax_components($price['data']['components']);
+				  	$tax_rate = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
+				  	$taxed_amount = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount']: 0;
+				  	$tax_applied_rates[$tax_rate] = $tax_rate;
+			    }
+			   
+			    
+			    
+		  		$items['items'][] = array(
+                    			"name" => commerce_line_item_title($line_item_wrapper->value()),
+								"description" => "",
+								"unit_price" => ($price['amount'] - $taxed_amount)/100,
+								"quantity" => round($line_item_wrapper->quantity->value()),
+								"merchant_item_id" => $line_item_wrapper->commerce_product->sku->value(),
+								"tax_table_selector" => $tax_rate,
+								"weight" => array(
+									"unit" => "KB",
+									"value" => "0",
+									)
+								);
+			}
+    	}
+    }			   
+
+
+    
+    foreach($tax_applied_rates as $key => $value){
+	    $tax_tables['tax_tables']['alternate'][] = array(
+		    											'standalone' => "false",
+		    											'name' => $key,
+		    											'rules' => array(
+			    											array('rate' => $value)
+		    											)
+		    											
+	    );
+    }
+    
+
+        list($address, $apartment) = parseAddress($wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value());
+        $street = $address;
+        $housenumber = $apartment;
+ 
+    
+    
     try {
-        $order = $msp->orders->post(array(
+        $msp_order = $msp->orders->post(array(
             "type" => $payment_method['settings']['type'],
             "order_id" => $int_transaction_id,
             "currency" => $wrapper->commerce_order_total->currency_code->value(),
@@ -361,9 +455,9 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
                 "forwarded_ip" => $_SERVER["REMOTE_ADDR"],
                 "first_name" => $first_name,
                 "last_name" => $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value(),
-                "address1" => $wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value(),
+                "address1" => $street,
                 "address2" => "",
-                "house_number" => $wrapper->commerce_customer_billing->commerce_customer_address->premise->value(),
+                "house_number" => $housenumber,
                 "zip_code" => $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value(),
                 "city" => $wrapper->commerce_customer_billing->commerce_customer_address->locality->value(),
                 "state" => "",
@@ -378,18 +472,33 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
                 "partner" => "",
                 "shop_root_url" => ""
             ),
-            "gateway_info" => array(
-                "issuer_id" => $payment_method['settings']['issuer'],
-            ),
+            "gateway_info" => $gateway_info,
+	        "shopping_cart" => $items,
+	        "checkout_options" => $tax_tables,
         ));
     }
     catch (API_Exception $e) {
         drupal_set_message(t('Transaction error: @error', array(
             '@error' => htmlspecialchars($e->getMessage())
         )), 'error', false);
-        $form_state['redirect'] = 'checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'];
-        return $form; 
+        
+        
+        commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
+		drupal_goto(commerce_checkout_order_uri($order));
+        
+        
     }
+    
+   /* if($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
+    {
+		if($msp->orders->result->success){
+			drupal_goto(url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
+		}    
+	    
+	}else{
+		$form['#action'] = $msp->orders->getPaymentLink();
+	}*/
+    
    
     $form['#action'] = $msp->orders->getPaymentLink();
     $form['submit']  = array(
@@ -398,6 +507,51 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     );
     return $form;
 }
+
+
+
+
+function parseAddress($street_address) {
+        $address = $street_address;
+        $apartment = "";
+
+        $offset = strlen($street_address);
+
+        while (($offset = rstrpos($street_address, ' ', $offset)) !== false) {
+            if ($offset < strlen($street_address) - 1 && is_numeric($street_address[$offset + 1])) {
+                $address = trim(substr($street_address, 0, $offset));
+                $apartment = trim(substr($street_address, $offset + 1));
+                break;
+            }
+        }
+
+        if (empty($apartment) && strlen($street_address) > 0 && is_numeric($street_address[0])) {
+            $pos = strpos($street_address, ' ');
+
+            if ($pos !== false) {
+                $apartment = trim(substr($street_address, 0, $pos), ", \t\n\r\0\x0B");
+                $address = trim(substr($street_address, $pos + 1));
+            }
+        }
+
+        return array($address, $apartment);
+    }
+
+function rstrpos($haystack, $needle, $offset = null) {
+        $size = strlen($haystack);
+
+        if (is_null($offset)) {
+            $offset = $size;
+        }
+
+        $pos = strpos(strrev($haystack), strrev($needle), $size - $offset);
+
+        if ($pos === false) {
+            return false;
+        }
+
+        return $size - $pos - strlen($needle);
+    }
 
 /**
  * Defines the payment callback.
@@ -434,6 +588,7 @@ function commerce_multisafepay_payment_callback()
     
     $created  = new DateTime($ext_order->created);
     $modified = new DateTime($ext_order->modified);
+    
     $order = commerce_order_load($transaction->order_id);
     
     if ($status == 'completed') {
@@ -471,21 +626,14 @@ function commerce_multisafepay_payment_callback()
         commerce_payment_transaction_save($transaction);
     }
     
-    /*if ($initial_request != null) {
-    global $base_url;
-    echo '<a href=' . $base_url . '>Klik hier om terug te keren naar de website</a>';
-    drupal_exit();
-    } else {*/
-    echo 'ok';
-    drupal_exit();
-}
-
-
-
-function hook_commerce_multisafepay_order_paid_in_full($order, $transaction)
-{
-    echo 'MSP plugin. order paid in full hook activated';
-    exit;
+    if (isset($_GET['type']) && $_GET['type'] == 'initial') {
+    	$url = url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE));
+		echo '<a href=' . $url . '>Klik hier om terug te keren naar de website</a>';
+		drupal_exit();
+    } else {
+    	echo 'ok';
+		drupal_exit();
+    }
 }
 
 

@@ -34,6 +34,9 @@ class API_Client {
             throw new API_Exception("Please set your MultiSafepay API Key");
         }
 
+//print_r($http_body);exit;
+
+
         $url = $this->api_url . $api_method;
         $ch = curl_init($url);
         

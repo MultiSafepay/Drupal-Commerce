@@ -1,6 +1,0 @@
-name = Commerce MultiSafepay Ebon
-description = Integrates MultiSafepay Ebon Payment Method
-core = 7.x
-package = Commerce - Payment
-dependencies[] = commerce
-dependencies[] = commerce_payment
