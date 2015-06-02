@@ -86,11 +86,14 @@ function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, 
         $issuers[$issuer->code] = t($issuer->description);
     }
 
+    $module_path = $base_url . '/' . drupal_get_path('module', 'commerce_multisafepay');
+
+    
     $form = array();
     $form['issuer_holder'] = array(
             '#type' => 'item',
             '#title' => '',
-            '#description' => '<div id="issuer"><img src="' . $base_url . '/modules/commerce_multisafepay_json/images/veilig-betalen-ideal.png" border="0" width="252" height="69"/><br /><b class="bigger">' . t('Kies uw bank') . '</b><div>'
+            '#description' => '<div id="issuer"><img src="' . $module_path. '/images/veilig-betalen-ideal.png" border="0" width="252" height="69"/><br /><b class="bigger">' . t('Kies uw bank') . '</b><div>'
         );
 
         $form['issuer'] = array(
