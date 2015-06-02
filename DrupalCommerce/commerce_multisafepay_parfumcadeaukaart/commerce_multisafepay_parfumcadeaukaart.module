@@ -63,7 +63,7 @@ function commerce_multisafepay_parfumcadeaukaart_redirect_form($form, &$form_sta
             'absolute' => TRUE
         )),
         'payment_method' => $payment_method['instance_id'],
-        'gateway' => 'PARFUMCADEAUKAART',
+        'gateway' => 'PARFUMCADEAUKA',
         'issuer' => '',
         'type' => 'redirect'
     );
