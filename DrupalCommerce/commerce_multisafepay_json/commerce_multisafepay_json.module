@@ -12,18 +12,18 @@ require_once dirname(__FILE__) . "/includes/API/Autoloader.php";
  *
  * Defines a menu callback to receive the payment status from MultiSafepay.
  */
-function commerce_multisafepay_menu()
+function commerce_multisafepay_json_menu()
 {
     $items                                                                                                    = array();
     $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-refund'] = array(
         'title' => 'Refund',
         'page callback' => 'drupal_get_form',
         'page arguments' => array(
-            'commerce_multisafepay_refund_form',
+            'commerce_multisafepay_json_refund_form',
             3,
             5
         ),
-        'access callback' => 'commerce_multisafepay_refund_access',
+        'access callback' => 'commerce_multisafepay_json_refund_access',
         'access arguments' => array(
             3,
             5
@@ -31,7 +31,7 @@ function commerce_multisafepay_menu()
         'type' => MENU_DEFAULT_LOCAL_TASK,
         'context' => MENU_CONTEXT_INLINE,
         'weight' => 4,
-        'file' => 'includes/commerce_multisafepay.admin.inc'
+        'file' => 'includes/commerce_multisafepay_json.admin.inc'
     );
     
     
@@ -39,11 +39,11 @@ function commerce_multisafepay_menu()
         'title' => 'Shipped',
         'page callback' => 'drupal_get_form',
         'page arguments' => array(
-            'commerce_multisafepay_shipped_form',
+            'commerce_multisafepay_json_shipped_form',
             3,
             5
         ),
-        'access callback' => 'commerce_multisafepay_shipped_access',
+        'access callback' => 'commerce_multisafepay_json_shipped_access',
         'access arguments' => array(
             3,
             5
@@ -51,11 +51,11 @@ function commerce_multisafepay_menu()
         'type' => MENU_DEFAULT_LOCAL_TASK,
         'context' => MENU_CONTEXT_INLINE,
         'weight' => 4,
-        'file' => 'includes/commerce_multisafepay.admin.inc'
+        'file' => 'includes/commerce_multisafepay_json.admin.inc'
     );
     
     $items['multisafepay/callback'] = array(
-        'page callback' => 'commerce_multisafepay_payment_callback',
+        'page callback' => 'commerce_multisafepay_json_payment_callback',
         'page arguments' => array(
             1
         ),
@@ -80,9 +80,9 @@ function commerce_multisafepay_menu()
  * @return bool
  *   TRUE or FALSE indicating access.
  */
-function commerce_multisafepay_refund_access($order, $transaction)
+function commerce_multisafepay_json_refund_access($order, $transaction)
 {
-    if ($transaction->payment_method != 'commerce_multisafepay' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
+    if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
         'COMPLETED',
         'SHIPPED'
     )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
@@ -130,15 +130,15 @@ function commerce_multisafepay_refund_access($order, $transaction)
  * @return bool
  *   TRUE or FALSE indicating access.
  */
-function commerce_multisafepay_shipped_access($order, $transaction)
+function commerce_multisafepay_json_shipped_access($order, $transaction)
 {
 
-    if ($transaction->payment_method != 'commerce_multisafepay' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
+    if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
         'COMPLETED'
     )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
         return FALSE;
     }
-    if($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' && $transaction->instance_id != 'commerce_multisafepay_klarna|commerce_payment_commerce_multisafepay_klarna'){
+    if($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' && $transaction->instance_id != 'commerce_multisafepay_json_klarna|commerce_payment_commerce_multisafepay_json_klarna'){
 	    return FALSE;
     }
     
@@ -171,10 +171,10 @@ function commerce_multisafepay_shipped_access($order, $transaction)
  *
  * Defines Multisafepay's Frontend payment method.
  */
-function commerce_multisafepay_commerce_payment_method_info()
+function commerce_multisafepay_json_commerce_payment_method_info()
 {
     $payment_methods = array();
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
     
     if (!empty($payment['settings']['multisafepay_title'])) {
         $gateway_title = $payment['settings']['multisafepay_title'];
@@ -182,7 +182,7 @@ function commerce_multisafepay_commerce_payment_method_info()
         $gateway_title = 'MultiSafepay';
     }
     
-    $payment_methods['commerce_multisafepay'] = array(
+    $payment_methods['commerce_multisafepay_json'] = array(
         'title' => 'multisafepay',
         'display_title' => $gateway_title,
         'description' => t('Enable payments using multisafepay Global payments'),
@@ -198,7 +198,7 @@ function commerce_multisafepay_commerce_payment_method_info()
 /**
  * Payment method callback: Generates the payment method settings form.
  */
-function commerce_multisafepay_settings_form($settings = NULL)
+function commerce_multisafepay_json_settings_form($settings = NULL)
 {
     $form     = array();
     $settings = (array) $settings + array(
@@ -247,7 +247,7 @@ function commerce_multisafepay_settings_form($settings = NULL)
 /**
  * Payment method callback: submit form validation.
  */
-function commerce_multisafepay_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array())
+function commerce_multisafepay_json_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array())
 {
     // At this point we don't do validation on the API key.
     return TRUE;
@@ -257,7 +257,7 @@ function commerce_multisafepay_submit_form_validate($payment_method, $pane_form,
 /**
  * Redirects the user to the hosted payment page.
  */
-function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payment_method)
+function commerce_multisafepay_json_redirect_form($form, &$form_state, $order, $payment_method)
 {
     $payment_method['settings'] += array(
         // Return to the previous page when the payment is cancelled.
@@ -275,7 +275,7 @@ function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payme
         'issuer'=> ''
     );
     
-    return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+    return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
 }
 
 
@@ -288,17 +288,17 @@ function commerce_multisafepay_redirect_form($form, &$form_state, $order, $payme
  * payment page.
  *
  * @ingroup forms
- * @see commerce_multisafepay_submission_redirect()
+ * @see commerce_multisafepay_json_submission_redirect()
  */
-function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_method)
+function commerce_multisafepay_json_order_form($form, &$form_state, $order, $payment_method)
 {
-    drupal_add_js(drupal_get_path('module', 'commerce_multisafepay') . '/commerce_multisafepay.js');
+    drupal_add_js(drupal_get_path('module', 'commerce_multisafepay_json') . '/commerce_multisafepay_json.js');
     
     $payment_method['settings'] += array(
         'payment_method' => ''
     );
     
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
     $payment_method['settings'] +=$payment['settings'];
     
     global $language, $base_url;
@@ -337,7 +337,7 @@ function commerce_multisafepay_order_form($form, &$form_state, $order, $payment_
     }
     
     
-    $int_transaction_id = commerce_multisafepay_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
+    $int_transaction_id = commerce_multisafepay_json_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
     
     
     $gateway_info = array();
@@ -601,10 +601,10 @@ function rstrpos($haystack, $needle, $offset = null) {
  * @return array
  *   An url used by MultiSafepay to update the transaction
  */
-function commerce_multisafepay_payment_callback()
+function commerce_multisafepay_json_payment_callback()
 {
     $msp = new API_Client;
-    $payment_method = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
  
     if (!$payment_method['settings']['multisafepay_environment']) {
         $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
@@ -629,7 +629,7 @@ function commerce_multisafepay_payment_callback()
     if ($status == 'completed') {
         $transaction->remote_status  = strtoupper($status);
         $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay';
+        $transaction->payment_method = 'commerce_multisafepay_json';
         $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
         $transaction->amount         = $ext_order->amount;
@@ -640,7 +640,7 @@ function commerce_multisafepay_payment_callback()
     }elseif($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired'){
         $transaction->remote_status  = strtoupper($status);
         $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay';
+        $transaction->payment_method = 'commerce_multisafepay_json';
         $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
         $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
         $transaction->amount         = $ext_order->amount;
@@ -651,7 +651,7 @@ function commerce_multisafepay_payment_callback()
     }elseif($status == 'uncleared'){
         $transaction->remote_status  = strtoupper($status);
         $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay';
+        $transaction->payment_method = 'commerce_multisafepay_json';
         $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
         $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
         $transaction->amount         = $ext_order->amount;
@@ -662,7 +662,7 @@ function commerce_multisafepay_payment_callback()
     }elseif($status == 'shipped'){
         $transaction->remote_status  = strtoupper($status);
         $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay';
+        $transaction->payment_method = 'commerce_multisafepay_json';
         $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
         $transaction->amount         = $ext_order->amount;
@@ -693,7 +693,7 @@ function commerce_multisafepay_payment_callback()
  * @param $charge
  *   An array indicating the amount and currency code to charge.
  */
-function commerce_multisafepay_transaction($payment_method, $order, $charge)
+function commerce_multisafepay_json_transaction($payment_method, $order, $charge)
 {
     $wrapper = entity_metadata_wrapper('commerce_order', $order);
     
@@ -703,12 +703,12 @@ function commerce_multisafepay_transaction($payment_method, $order, $charge)
     $transaction->currency_code  = $wrapper->commerce_order_total->currency_code->value();
     $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
     $transaction->remote_id      = "";
-    $transaction->payment_method = 'commerce_multisafepay';
+    $transaction->payment_method = 'commerce_multisafepay_json';
     $transaction->remote_status  = "MultiSafepay Pre Transaction";
     $transaction->message        = t('This order is waiting for processing at MultiSafepay.');
     
     commerce_payment_transaction_save($transaction);
-    $order->data['commerce_multisafepay_orderid'] = $transaction->transaction_id;
+    $order->data['commerce_multisafepay_json_orderid'] = $transaction->transaction_id;
     return $transaction->transaction_id;
 }
 
@@ -720,7 +720,7 @@ function commerce_multisafepay_transaction($payment_method, $order, $charge)
  * Since the form is submitted via a JavaScript call, this page is only really
  * visible to those that have JS turned off.
  */
-function commerce_multisafepay_waiting_page()
+function commerce_multisafepay_json_waiting_page()
 {
     print('<html><head><title></title></head><body><p>');
     print t('Please wait to be redirected to MultiSafepay.');

@@ -8,7 +8,7 @@
 /**
  * Form callback: allows the user to refund a credit on a prior transaction.
  */
-function commerce_multisafepay_refund_form($form, &$form_state, $order, $transaction)
+function commerce_multisafepay_json_refund_form($form, &$form_state, $order, $transaction)
 {
     $form_state['order']          = $order;
     $form_state['transaction']    = $transaction;
@@ -54,7 +54,7 @@ function commerce_multisafepay_refund_form($form, &$form_state, $order, $transac
 /**
  * Validate handler: check the credit amount before attempting a refund request.
  */
-function commerce_multisafepay_refund_form_validate($form, &$form_state)
+function commerce_multisafepay_json_refund_form_validate($form, &$form_state)
 {
     $transaction = $form_state['transaction'];
     $amount      = $form_state['values']['amount'];
@@ -92,10 +92,12 @@ function commerce_multisafepay_refund_form_validate($form, &$form_state)
 /**
  * Submit handler: process a refund request.
  */
-function commerce_multisafepay_refund_form_submit($form, &$form_state)
+function commerce_multisafepay_json_refund_form_submit($form, &$form_state)
 {
     $msp            = new API_Client;
     $payment_method = $form_state['payment_method'];
+     $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+    $payment_method['settings'] +=$payment['settings'];
     
     if (!$payment_method['settings']['multisafepay_environment']) {
         $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
@@ -147,7 +149,7 @@ function commerce_multisafepay_refund_form_submit($form, &$form_state)
 
 
 
-function commerce_multisafepay_shipped_form($form, &$form_state, $order, $transaction)
+function commerce_multisafepay_json_shipped_form($form, &$form_state, $order, $transaction)
 {
 	$form_state['order']          = $order;
     $form_state['transaction']    = $transaction;
@@ -155,7 +157,7 @@ function commerce_multisafepay_shipped_form($form, &$form_state, $order, $transa
     
 	$msp            = new API_Client;
 
-    $payment_method = $payment_method = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment_method = $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
     
     if (!$payment_method['settings']['multisafepay_environment']) {
         $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);

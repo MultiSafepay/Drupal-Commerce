@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__FILE__) . "/../commerce_multisafepay/commerce_multisafepay.module";
+require_once dirname(__FILE__) . "/../commerce_multisafepay_json/commerce_multisafepay_json.module";
 /**
  * @file
  * Integrates MultiSafepay with Drupal Commerce.
@@ -67,5 +67,5 @@ function commerce_multisafepay_mistercash_redirect_form($form, &$form_state, $or
         'issuer' => '',
         'type' => 'redirect'
     );
-    return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+    return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
 }

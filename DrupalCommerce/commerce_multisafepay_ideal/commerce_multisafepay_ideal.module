@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../commerce_multisafepay/commerce_multisafepay.module";
+require_once dirname(__FILE__) . "/../commerce_multisafepay_json/commerce_multisafepay_json.module";
 /**
  * @file
  * Integrates MultiSafepay with Drupal Commerce.
@@ -64,7 +64,7 @@ function commerce_multisafepay_ideal_settings_form($settings = NULL)
 
 function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
     global $base_url;
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay|commerce_payment_commerce_multisafepay');
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
     $payment_method['settings'] += $payment['settings'];
     
     
@@ -90,7 +90,7 @@ function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, 
     $form['issuer_holder'] = array(
             '#type' => 'item',
             '#title' => '',
-            '#description' => '<div id="issuer"><img src="' . $base_url . '/modules/commerce_multisafepay/images/veilig-betalen-ideal.png" border="0" width="252" height="69"/><br /><b class="bigger">' . t('Kies uw bank') . '</b><div>'
+            '#description' => '<div id="issuer"><img src="' . $base_url . '/modules/commerce_multisafepay_json/images/veilig-betalen-ideal.png" border="0" width="252" height="69"/><br /><b class="bigger">' . t('Kies uw bank') . '</b><div>'
         );
 
         $form['issuer'] = array(
@@ -142,7 +142,7 @@ function commerce_multisafepay_ideal_redirect_form($form, &$form_state, $order, 
     }
     
 
-    return commerce_multisafepay_order_form($form, $form_state, $order, $payment_method);
+    return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
 }
 
 
