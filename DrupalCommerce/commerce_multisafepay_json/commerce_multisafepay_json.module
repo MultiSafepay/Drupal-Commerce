@@ -502,7 +502,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
             ),
             "plugin" => array(
                 "shop" => "Drupal Commerce",
-                "shop_version" => "",
+                "shop_version" => VERSION,
                 "plugin_version" => "2.0.0",
                 "partner" => "",
                 "shop_root_url" => ""
