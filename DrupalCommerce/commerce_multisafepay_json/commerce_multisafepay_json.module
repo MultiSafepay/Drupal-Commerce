@@ -677,6 +677,9 @@ function commerce_multisafepay_json_payment_callback()
   
   $order = commerce_order_load($transaction->order_id);
   
+  //We have receive a callback of a transaction, meaning the order will be updated and can be set to the next page.
+  commerce_payment_redirect_pane_next_page($order);
+  
   if ($status == 'completed')
    {
     $transaction->remote_status  = strtoupper($status);
