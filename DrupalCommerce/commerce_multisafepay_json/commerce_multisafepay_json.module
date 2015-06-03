@@ -12,57 +12,57 @@ require_once dirname(__FILE__) . "/includes/API/Autoloader.php";
  * Defines a menu callback to receive the payment status from MultiSafepay.
  */
 function commerce_multisafepay_json_menu()
-{
-    $items                                                                                                    = array();
-    $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-refund'] = array(
-        'title' => 'Refund',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array(
-            'commerce_multisafepay_json_refund_form',
-            3,
-            5
-        ),
-        'access callback' => 'commerce_multisafepay_json_refund_access',
-        'access arguments' => array(
-            3,
-            5
-        ),
-        'type' => MENU_DEFAULT_LOCAL_TASK,
-        'context' => MENU_CONTEXT_INLINE,
-        'weight' => 4,
-        'file' => 'includes/commerce_multisafepay_json.admin.inc'
-    );
-    
-    $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-shipped'] = array(
-        'title' => 'Shipped',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array(
-            'commerce_multisafepay_json_shipped_form',
-            3,
-            5
-        ),
-        'access callback' => 'commerce_multisafepay_json_shipped_access',
-        'access arguments' => array(
-            3,
-            5
-        ),
-        'type' => MENU_DEFAULT_LOCAL_TASK,
-        'context' => MENU_CONTEXT_INLINE,
-        'weight' => 4,
-        'file' => 'includes/commerce_multisafepay_json.admin.inc'
-    );
-    
-    $items['multisafepay/callback'] = array(
-        'page callback' => 'commerce_multisafepay_json_payment_callback',
-        'page arguments' => array(
-            1
-        ),
-        'access callback' => TRUE,
-        'type' => MENU_CALLBACK
-    );
-    
-    return $items;
-}
+ {
+  $items                                                                                                    = array();
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-refund'] = array(
+    'title' => 'Refund',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array(
+      'commerce_multisafepay_json_refund_form',
+      3,
+      5
+    ),
+    'access callback' => 'commerce_multisafepay_json_refund_access',
+    'access arguments' => array(
+      3,
+      5
+    ),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 4,
+    'file' => 'includes/commerce_multisafepay_json.admin.inc'
+  );
+  
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/multisafepay-shipped'] = array(
+    'title' => 'Shipped',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array(
+      'commerce_multisafepay_json_shipped_form',
+      3,
+      5
+    ),
+    'access callback' => 'commerce_multisafepay_json_shipped_access',
+    'access arguments' => array(
+      3,
+      5
+    ),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 4,
+    'file' => 'includes/commerce_multisafepay_json.admin.inc'
+  );
+  
+  $items['multisafepay/callback'] = array(
+    'page callback' => 'commerce_multisafepay_json_payment_callback',
+    'page arguments' => array(
+      1
+    ),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK
+  );
+  
+  return $items;
+ }
 
 
 
@@ -79,38 +79,43 @@ function commerce_multisafepay_json_menu()
  *   TRUE or FALSE indicating access.
  */
 function commerce_multisafepay_json_refund_access($order, $transaction)
-{
-    if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
-        'COMPLETED',
-        'SHIPPED'
-    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
-        return FALSE;
-    }
-    
-    // Return FALSE if the transaction was not a success.
-    if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
-        return FALSE;
-    }
-    
-    $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
-    $order_total   = $order_wrapper->commerce_order_total->value();
-    $balance       = commerce_payment_order_balance($order);
-    if ($balance['amount'] >= $order_total['amount']) {
-        return FALSE;
-    }
-    
-    if ($transaction->amount <= 0) {
-        return FALSE;
-    }
-    
-    // Return FALSE if it is more than 60 days since the original transaction.
-    if (REQUEST_TIME - $transaction->created > 86400 * 60) {
-        return FALSE;
-    }
-    
-    // Allow access if the user can update payments on this transaction.
-    return commerce_payment_transaction_access('update', $transaction);
-}
+ {
+  if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
+    'COMPLETED',
+    'SHIPPED'
+  )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS)
+   {
+    return FALSE;
+   }
+  
+  // Return FALSE if the transaction was not a success.
+  if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS)
+   {
+    return FALSE;
+   }
+  
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $order_total   = $order_wrapper->commerce_order_total->value();
+  $balance       = commerce_payment_order_balance($order);
+  if ($balance['amount'] >= $order_total['amount'])
+   {
+    return FALSE;
+   }
+  
+  if ($transaction->amount <= 0)
+   {
+    return FALSE;
+   }
+  
+  // Return FALSE if it is more than 60 days since the original transaction.
+  if (REQUEST_TIME - $transaction->created > 86400 * 60)
+   {
+    return FALSE;
+   }
+  
+  // Allow access if the user can update payments on this transaction.
+  return commerce_payment_transaction_access('update', $transaction);
+ }
 
 
 
@@ -127,36 +132,41 @@ function commerce_multisafepay_json_refund_access($order, $transaction)
  *   TRUE or FALSE indicating access.
  */
 function commerce_multisafepay_json_shipped_access($order, $transaction)
-{
-    if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
-        'COMPLETED'
-    )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
-        return FALSE;
-    }
-    if ($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' && $transaction->instance_id != 'commerce_multisafepay_json_klarna|commerce_payment_commerce_multisafepay_json_klarna') {
-        return FALSE;
-    }
-    
-    // Return FALSE if the transaction was not a success.
-    if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS) {
-        return FALSE;
-    }
-    
-    $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
-    $order_total   = $order_wrapper->commerce_order_total->value();
-    $balance       = commerce_payment_order_balance($order);
-    if ($balance['amount'] >= $order_total['amount']) {
-        return FALSE;
-    }
-    
-    if ($transaction->amount <= 0) {
-        return FALSE;
-    }
-    
-    // Allow access if the user can update payments on this transaction.
-    return commerce_payment_transaction_access('update', $transaction);
-    
-}
+ {
+  if ($transaction->payment_method != 'commerce_multisafepay_json' || empty($transaction->remote_id) || !in_array($transaction->remote_status, array(
+    'COMPLETED'
+  )) || $transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS)
+   {
+    return FALSE;
+   }
+  if ($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' && $transaction->instance_id != 'commerce_multisafepay_json_klarna|commerce_payment_commerce_multisafepay_json_klarna')
+   {
+    return FALSE;
+   }
+  
+  // Return FALSE if the transaction was not a success.
+  if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS)
+   {
+    return FALSE;
+   }
+  
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $order_total   = $order_wrapper->commerce_order_total->value();
+  $balance       = commerce_payment_order_balance($order);
+  if ($balance['amount'] >= $order_total['amount'])
+   {
+    return FALSE;
+   }
+  
+  if ($transaction->amount <= 0)
+   {
+    return FALSE;
+   }
+  
+  // Allow access if the user can update payments on this transaction.
+  return commerce_payment_transaction_access('update', $transaction);
+  
+ }
 
 
 
@@ -166,111 +176,114 @@ function commerce_multisafepay_json_shipped_access($order, $transaction)
  * Defines Multisafepay's Frontend payment method.
  */
 function commerce_multisafepay_json_commerce_payment_method_info()
-{
-    $payment_methods = array();
-    $payment         = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
-    
-    if (!empty($payment['settings']['multisafepay_title'])) {
-        $gateway_title = $payment['settings']['multisafepay_title'];
-    } else {
-        $gateway_title = 'MultiSafepay';
-    }
-    
-    $payment_methods['commerce_multisafepay_json'] = array(
-        'title' => 'multisafepay',
-        'display_title' => $gateway_title,
-        'description' => t('Enable payments using multisafepay Global payments'),
-        'terminal' => FALSE,
-        'callbacks' => array(),
-        'offsite' => TRUE,
-        'offsite_autoredirect' => TRUE
-    );
-    return $payment_methods;
-}
+ {
+  $payment_methods = array();
+  $payment         = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  
+  if (!empty($payment['settings']['multisafepay_title']))
+   {
+    $gateway_title = $payment['settings']['multisafepay_title'];
+   }
+  else
+   {
+    $gateway_title = 'MultiSafepay';
+   }
+  
+  $payment_methods['commerce_multisafepay_json'] = array(
+    'title' => 'multisafepay',
+    'display_title' => $gateway_title,
+    'description' => t('Enable payments using multisafepay Global payments'),
+    'terminal' => FALSE,
+    'callbacks' => array(),
+    'offsite' => TRUE,
+    'offsite_autoredirect' => TRUE
+  );
+  return $payment_methods;
+ }
 
 
 /**
  * Payment method callback: Generates the payment method settings form.
  */
 function commerce_multisafepay_json_settings_form($settings = NULL)
-{
-    $form     = array();
-    $settings = (array) $settings + array(
-        'multisafepay_environment' => '',
-        'multisafepay_live_api_key' => '',
-        'multisafepay_test_api_key' => '',
-        'multisafepay_title' => ''
-    );
-    
-    $form['multisafepay_title'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Title in Checkout',
-        '#default_value' => isset($settings['multisafepay_title']) ? $settings['multisafepay_title'] : t('multisafepay '),
-        '#description' => t('The title of the payment method displayed to customers in checkout')
-    );
-    
-    $form['multisafepay_environment'] = array(
-        '#required' => TRUE,
-        '#type' => 'radios',
-        '#title' => t('Test or Production'),
-        '#default_value' => $settings['multisafepay_environment'],
-        '#options' => array(
-            t('Production'),
-            t('Test')
-        )
-    );
-    
-    $form['multisafepay_live_api_key'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Live API key',
-        '#default_value' => $settings['multisafepay_live_api_key'],
-        '#description' => t('Enter the API key (Live environement). You can find it in the Multisafepay website profile')
-    );
-    
-    $form['multisafepay_test_api_key'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Test API key',
-        '#default_value' => $settings['multisafepay_test_api_key'],
-        '#description' => t('Enter the API key (Test environment). You can find it in the Multisafepay website profile')
-    );
-    
-    return $form;
-}
+ {
+  $form     = array();
+  $settings = (array) $settings + array(
+    'multisafepay_environment' => '',
+    'multisafepay_live_api_key' => '',
+    'multisafepay_test_api_key' => '',
+    'multisafepay_title' => ''
+  );
+  
+  $form['multisafepay_title'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Title in Checkout',
+    '#default_value' => isset($settings['multisafepay_title']) ? $settings['multisafepay_title'] : t('multisafepay '),
+    '#description' => t('The title of the payment method displayed to customers in checkout')
+  );
+  
+  $form['multisafepay_environment'] = array(
+    '#required' => TRUE,
+    '#type' => 'radios',
+    '#title' => t('Test or Production'),
+    '#default_value' => $settings['multisafepay_environment'],
+    '#options' => array(
+      t('Production'),
+      t('Test')
+    )
+  );
+  
+  $form['multisafepay_live_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Live API key',
+    '#default_value' => $settings['multisafepay_live_api_key'],
+    '#description' => t('Enter the API key (Live environement). You can find it in the Multisafepay website profile')
+  );
+  
+  $form['multisafepay_test_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Test API key',
+    '#default_value' => $settings['multisafepay_test_api_key'],
+    '#description' => t('Enter the API key (Test environment). You can find it in the Multisafepay website profile')
+  );
+  
+  return $form;
+ }
 
 
 /**
  * Payment method callback: submit form validation.
  */
 function commerce_multisafepay_json_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array())
-{
-    // At this point we don't do validation on the API key.
-    return TRUE;
-}
+ {
+  // At this point we don't do validation on the API key.
+  return TRUE;
+ }
 
 
 /**
  * Redirects the user to the hosted payment page.
  */
 function commerce_multisafepay_json_redirect_form($form, &$form_state, $order, $payment_method)
-{
-    $payment_method['settings'] += array(
-        // Return to the previous page when the payment is cancelled.
-        'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
-            'absolute' => TRUE
-        )),
-        // Return to the payment redirect page for processing successful payments.
-        'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
-            'absolute' => TRUE
-        )),
-        // Specify the current payment method instance ID in the notify_url.
-        'payment_method' => $payment_method['instance_id'],
-        'gateway' => '',
-        'type' => 'redirect',
-        'issuer' => ''
-    );
-    
-    return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
-}
+ {
+  $payment_method['settings'] += array(
+    // Return to the previous page when the payment is cancelled.
+    'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
+      'absolute' => TRUE
+    )),
+    // Return to the payment redirect page for processing successful payments.
+    'return' => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+      'absolute' => TRUE
+    )),
+    // Specify the current payment method instance ID in the notify_url.
+    'payment_method' => $payment_method['instance_id'],
+    'gateway' => '',
+    'type' => 'redirect',
+    'issuer' => ''
+  );
+  
+  return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
+ }
 
 
 
@@ -285,291 +298,343 @@ function commerce_multisafepay_json_redirect_form($form, &$form_state, $order, $
  * @see commerce_multisafepay_json_submission_redirect()
  */
 function commerce_multisafepay_json_order_form($form, &$form_state, $order, $payment_method)
-{
-    drupal_add_js(drupal_get_path('module', 'commerce_multisafepay_json') . '/theme/commerce_multisafepay_json.js');
-    
-    $payment_method['settings'] += array(
-        'payment_method' => ''
-    );
-    
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
-    $payment_method['settings'] += $payment['settings'];
-    
-    global $language, $base_url;
-    $wrapper    = entity_metadata_wrapper('commerce_order', $order);
-    $line_items = $order->commerce_line_items;
-    
-    $item_list = '<ul>';
-    
-    foreach ($line_items as $key => $items) {
-        foreach ($items as $item) {
-            $item_object = commerce_line_item_load($item['line_item_id']);
-            $title       = commerce_line_item_title($item_object);
-            $quantity    = $item_object->quantity;
-            $item_list .= '<li>' . $title . ' x ' . $quantity . '</li>';
-        }
-    }
-    $item_list .= '</ul>';
-    $item_list = '';
-    
-    $payment_method['settings'] += array(
-        'payment_method' => 'multisafepay'
-    );
-    
-    $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->first_name->value();
-    if (empty($first_name)) {
-        $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->name_line->value();
-    }
-    
-    $msp = new API_Client;
-    if (!$payment_method['settings']['multisafepay_environment']) {
-        $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
-        $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
-    } else {
-        $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
-        $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
-    }
-    
-    $int_transaction_id = commerce_multisafepay_json_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
-
-    $gateway_info = array(
-        //"birthday" => "1980-01-30",
-        //"bank_account" => "2884455",
-        //"phone" => "0208500500",
-        // "referrer" => "http://google.nl",
-        //"user_agent" => "msp01",
-        "email" => $order->mail,
-        "issuer_id" => $payment_method['settings']['issuer']
-    );
-    
-    $items                     = array();
-    $tax_tables                = array();
-    $tax_applied_rates         = array();
-    $tax_applied_rates['BTW0'] = 'BTW0';
-    
-    if ($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA') {
-        foreach ($wrapper->commerce_line_items as $delta => $line_item_wrapper) {
-            if (module_exists('commerce_shipping') && $line_item_wrapper->type->value() == 'shipping') {
-                $shipping_price = $line_item_wrapper->commerce_unit_price->value();
-                if (function_exists('commerce_tax_components')) {
-                    $tax                           = commerce_tax_components($shipping_price['data']['components']);
-                    $tax_rate                      = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTW0';
-                    $taxed_amount                  = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
-                    $tax_applied_rates['shipping'] = $tax_rate;
-                }
-                $items['items'][] = array(
-                    "name" => commerce_line_item_title($line_item_wrapper->value()),
-                    "description" => "",
-                    "unit_price" => ($shipping_price['amount'] - $taxed_amount) / 100,
-                    "quantity" => "1",
-                    "merchant_item_id" => "msp-shipping",
-                    "tax_table_selector" => $tax_applied_rates['shipping'],
-                    "weight" => array(
-                        "unit" => "KB",
-                        "value" => "0"
-                    )
-                );
-                
-            } elseif (module_exists('commerce_product') && $line_item_wrapper->type->value() == 'product') {
-                $price = $line_item_wrapper->commerce_unit_price->value();
-                
-                $tax_rate = 'BTW0';
-                if (function_exists('commerce_tax_components')) {
-                    $tax                          = commerce_tax_components($price['data']['components']);
-                    $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
-                    $taxed_amount                 = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
-                    $tax_applied_rates[$tax_rate] = $tax_rate;
-                }
-                
-                $items['items'][] = array(
-                    "name" => commerce_line_item_title($line_item_wrapper->value()),
-                    "description" => "",
-                    "unit_price" => ($price['amount'] - $taxed_amount) / 100,
-                    "quantity" => round($line_item_wrapper->quantity->value()),
-                    "merchant_item_id" => $line_item_wrapper->commerce_product->sku->value(),
-                    "tax_table_selector" => $tax_rate,
-                    "weight" => array(
-                        "unit" => "KB",
-                        "value" => "0"
-                    )
-                );
-            } elseif (module_exists('commerce_discount') && $line_item_wrapper->type->value() == 'commerce_discount') {
-                $price = $line_item_wrapper->commerce_unit_price->value();
-                
-                $items['items'][] = array(
-                    "name" => commerce_line_item_title($line_item_wrapper->value()),
-                    "description" => "",
-                    "unit_price" => $price['amount'] / 100,
-                    "quantity" => round($line_item_wrapper->quantity->value()),
-                    "merchant_item_id" => 'discount',
-                    "tax_table_selector" => 'BTW0',
-                    "weight" => array(
-                        "unit" => "KB",
-                        "value" => "0"
-                    )
-                );
-            } elseif (module_exists('commerce_coupon') && $line_item_wrapper->type->value() == 'commerce_coupon') {
-                $price = $line_item_wrapper->commerce_unit_price->value();
-                $items['items'][] = array(
-                    "name" => commerce_line_item_title($line_item_wrapper->value()),
-                    "description" => "",
-                    "unit_price" => $price['amount'] / 100,
-                    "quantity" => round($line_item_wrapper->quantity->value()),
-                    "merchant_item_id" => 'coupon',
-                    "tax_table_selector" => 'BTW0',
-                    "weight" => array(
-                        "unit" => "KB",
-                        "value" => "0"
-                    )
-                );
-            }
-        }
-    }
-    
-    foreach ($tax_applied_rates as $key => $value) {
-        $tax_tables['tax_tables']['alternate'][] = array(
-            'standalone' => "false",
-            'name' => $key,
-            'rules' => array(
-                array(
-                    'rate' => $value
-                )
-            )
+ {
+  drupal_add_js(drupal_get_path('module', 'commerce_multisafepay_json') . '/theme/commerce_multisafepay_json.js');
+  
+  $payment_method['settings'] += array(
+    'payment_method' => ''
+  );
+  
+  $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  $payment_method['settings'] += $payment['settings'];
+  
+  global $language, $base_url;
+  $wrapper    = entity_metadata_wrapper('commerce_order', $order);
+  $line_items = $order->commerce_line_items;
+  
+  $item_list = '<ul>';
+  
+  foreach ($line_items as $key => $items)
+   {
+    foreach ($items as $item)
+     {
+      $item_object = commerce_line_item_load($item['line_item_id']);
+      $title       = commerce_line_item_title($item_object);
+      $quantity    = $item_object->quantity;
+      $item_list .= '<li>' . $title . ' x ' . $quantity . '</li>';
+     }
+   }
+  $item_list .= '</ul>';
+  $item_list = '';
+  
+  $payment_method['settings'] += array(
+    'payment_method' => 'multisafepay'
+  );
+  
+  $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->first_name->value();
+  if (empty($first_name))
+   {
+    $first_name = $wrapper->commerce_customer_billing->commerce_customer_address->name_line->value();
+   }
+  
+  $msp = new API_Client;
+  if (!$payment_method['settings']['multisafepay_environment'])
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
+    $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
+   }
+  else
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+    $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
+   }
+  
+  $int_transaction_id = commerce_multisafepay_json_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
+  
+  $gateway_info = array(
+    //"birthday" => "1980-01-30",
+    //"bank_account" => "2884455",
+    //"phone" => "0208500500",
+    // "referrer" => "http://google.nl",
+    //"user_agent" => "msp01",
+    "email" => $order->mail,
+    "issuer_id" => $payment_method['settings']['issuer']
+  );
+  
+  $items                     = array();
+  $tax_tables                = array();
+  $tax_applied_rates         = array();
+  $tax_applied_rates['BTW0'] = 'BTW0';
+  
+  if ($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
+   {
+    foreach ($wrapper->commerce_line_items as $delta => $line_item_wrapper)
+     {
+      if (module_exists('commerce_shipping') && $line_item_wrapper->type->value() == 'shipping')
+       {
+        $shipping_price = $line_item_wrapper->commerce_unit_price->value();
+        if (function_exists('commerce_tax_components'))
+         {
+          $tax                           = commerce_tax_components($shipping_price['data']['components']);
+          $tax_rate                      = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTW0';
+          $taxed_amount                  = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
+          $tax_applied_rates['shipping'] = $tax_rate;
+         }
+        $items['items'][] = array(
+          "name" => commerce_line_item_title($line_item_wrapper->value()),
+          "description" => "",
+          "unit_price" => ($shipping_price['amount'] - $taxed_amount) / 100,
+          "quantity" => "1",
+          "merchant_item_id" => "msp-shipping",
+          "tax_table_selector" => $tax_applied_rates['shipping'],
+          "weight" => array(
+            "unit" => "KB",
+            "value" => "0"
+          )
         );
-    }
-    
-    list($address, $apartment) = parseAddress($wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value());
-    $street      = $address;
-    $housenumber = $apartment;
-
-    try {
-        $msp_order = $msp->orders->post(array(
-            "type" => $payment_method['settings']['type'],
-            "order_id" => $int_transaction_id,
-            "currency" => $wrapper->commerce_order_total->currency_code->value(),
-            "amount" => $wrapper->commerce_order_total->amount->value(),
-            "description" => 'Order #' . $order->order_id,
-            "var1" => $order->order_id,
-            "items" => $item_list,
-            "manual" => "false",
-            "gateway" => $payment_method['settings']['gateway'],
-            "days_active" => "30",
-            "payment_options" => array(
-                "notification_url" => url('multisafepay/callback', array(
-                    'absolute' => TRUE
-                )) . '?type=initial',
-                "redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
-                    'absolute' => TRUE
-                )),
-                "cancel_url" => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
-                    'absolute' => TRUE
-                )),
-                "close_window" => "true"
-            ),
-            "customer" => array(
-                "locale" => $language->language . '_' . strtoupper($language->language),
-                "ip_address" => ip_address(),
-                "forwarded_ip" => $_SERVER["REMOTE_ADDR"],
-                "first_name" => $first_name,
-                "last_name" => $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value(),
-                "address1" => $street,
-                "address2" => "",
-                "house_number" => $housenumber,
-                "zip_code" => $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value(),
-                "city" => $wrapper->commerce_customer_billing->commerce_customer_address->locality->value(),
-                "state" => "",
-                "country" => $wrapper->commerce_customer_billing->commerce_customer_address->country->value(),
-                "phone" => "",
-                "email" => $order->mail
-            ),
-            "plugin" => array(
-                "shop" => "Drupal Commerce",
-                "shop_version" => VERSION,
-                "plugin_version" => "2.0.0",
-                "partner" => "",
-                "shop_root_url" => ""
-            ),
-            "gateway_info" => $gateway_info,
-            "shopping_cart" => $items,
-            "checkout_options" => $tax_tables
-        ));
-    }
-    catch (API_Exception $e) {
-        drupal_set_message(t('Transaction error: @error', array(
-            '@error' => htmlspecialchars($e->getMessage())
-        )), 'error', false);
         
-        commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
-        drupal_goto(commerce_checkout_order_uri($order));
-    }
-    
-    /* if($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
-    {
-    if($msp->orders->result->success){
-    drupal_goto(url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
-    }    
-    
-    }else{
-    $form['#action'] = $msp->orders->getPaymentLink();
-    }*/
-    
-    $form['#action'] = $msp->orders->getPaymentLink();
-    $form['submit']  = array(
-        '#type' => 'submit',
-        '#value' => t('Start payment')
+       }
+      elseif (module_exists('commerce_product') && $line_item_wrapper->type->value() == 'product')
+       {
+        $price = $line_item_wrapper->commerce_unit_price->value();
+        
+        $tax_rate = 'BTW0';
+        if (function_exists('commerce_tax_components'))
+         {
+          $tax                          = commerce_tax_components($price['data']['components']);
+          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
+          $taxed_amount                 = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
+          $tax_applied_rates[$tax_rate] = $tax_rate;
+         }
+        
+        $items['items'][] = array(
+          "name" => commerce_line_item_title($line_item_wrapper->value()),
+          "description" => "",
+          "unit_price" => ($price['amount'] - $taxed_amount) / 100,
+          "quantity" => round($line_item_wrapper->quantity->value()),
+          "merchant_item_id" => $line_item_wrapper->commerce_product->sku->value(),
+          "tax_table_selector" => $tax_rate,
+          "weight" => array(
+            "unit" => "KB",
+            "value" => "0"
+          )
+        );
+       }
+      elseif (module_exists('commerce_discount') && $line_item_wrapper->type->value() == 'commerce_discount')
+       {
+        $price = $line_item_wrapper->commerce_unit_price->value();
+        
+        $items['items'][] = array(
+          "name" => commerce_line_item_title($line_item_wrapper->value()),
+          "description" => "",
+          "unit_price" => $price['amount'] / 100,
+          "quantity" => round($line_item_wrapper->quantity->value()),
+          "merchant_item_id" => 'discount',
+          "tax_table_selector" => 'BTW0',
+          "weight" => array(
+            "unit" => "KB",
+            "value" => "0"
+          )
+        );
+       }
+      elseif (module_exists('commerce_coupon') && $line_item_wrapper->type->value() == 'commerce_coupon')
+       {
+        $price            = $line_item_wrapper->commerce_unit_price->value();
+        $items['items'][] = array(
+          "name" => commerce_line_item_title($line_item_wrapper->value()),
+          "description" => "",
+          "unit_price" => $price['amount'] / 100,
+          "quantity" => round($line_item_wrapper->quantity->value()),
+          "merchant_item_id" => 'coupon',
+          "tax_table_selector" => 'BTW0',
+          "weight" => array(
+            "unit" => "KB",
+            "value" => "0"
+          )
+        );
+       }
+      elseif (module_exists('commerce_fees') && $line_item_wrapper->type->value() == 'fee')
+       {
+        $price = $line_item_wrapper->commerce_unit_price->value();
+        
+        $tax_rate = 'BTW0';
+        if (function_exists('commerce_tax_components'))
+         {
+          $tax                          = commerce_tax_components($price['data']['components']);
+          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
+          $taxed_amount                 = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
+          $tax_applied_rates[$tax_rate] = $tax_rate;
+         }
+
+        $items['items'][] = array(
+          "name" => commerce_line_item_title($line_item_wrapper->value()),
+          "description" => "",
+          "unit_price" => ($price['amount'] - $taxed_amount) / 100,
+          "quantity" => round($line_item_wrapper->quantity->value()),
+          "merchant_item_id" => 'payment-fee',
+          "tax_table_selector" => $tax_rate,
+          "weight" => array(
+            "unit" => "KB",
+            "value" => "0"
+          )
+        );
+       }
+     }
+   }
+  
+  foreach ($tax_applied_rates as $key => $value)
+   {
+    $tax_tables['tax_tables']['alternate'][] = array(
+      'standalone' => "false",
+      'name' => $key,
+      'rules' => array(
+        array(
+          'rate' => $value
+        )
+      )
     );
-    return $form;
-}
+   }
+  
+  list($address, $apartment) = parseAddress($wrapper->commerce_customer_billing->commerce_customer_address->thoroughfare->value());
+  $street      = $address;
+  $housenumber = $apartment;
+  
+  try
+   {
+    $msp_order = $msp->orders->post(array(
+      "type" => $payment_method['settings']['type'],
+      "order_id" => $int_transaction_id,
+      "currency" => $wrapper->commerce_order_total->currency_code->value(),
+      "amount" => $wrapper->commerce_order_total->amount->value(),
+      "description" => 'Order #' . $order->order_id,
+      "var1" => $order->order_id,
+      "items" => $item_list,
+      "manual" => "false",
+      "gateway" => $payment_method['settings']['gateway'],
+      "days_active" => "30",
+      "payment_options" => array(
+        "notification_url" => url('multisafepay/callback', array(
+          'absolute' => TRUE
+        )) . '?type=initial',
+        "redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+          'absolute' => TRUE
+        )),
+        "cancel_url" => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
+          'absolute' => TRUE
+        )),
+        "close_window" => "true"
+      ),
+      "customer" => array(
+        "locale" => $language->language . '_' . strtoupper($language->language),
+        "ip_address" => ip_address(),
+        "forwarded_ip" => $_SERVER["REMOTE_ADDR"],
+        "first_name" => $first_name,
+        "last_name" => $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value(),
+        "address1" => $street,
+        "address2" => "",
+        "house_number" => $housenumber,
+        "zip_code" => $wrapper->commerce_customer_billing->commerce_customer_address->postal_code->value(),
+        "city" => $wrapper->commerce_customer_billing->commerce_customer_address->locality->value(),
+        "state" => "",
+        "country" => $wrapper->commerce_customer_billing->commerce_customer_address->country->value(),
+        "phone" => "",
+        "email" => $order->mail
+      ),
+      "plugin" => array(
+        "shop" => "Drupal Commerce",
+        "shop_version" => VERSION,
+        "plugin_version" => "2.0.0",
+        "partner" => "",
+        "shop_root_url" => ""
+      ),
+      "gateway_info" => $gateway_info,
+      "shopping_cart" => $items,
+      "checkout_options" => $tax_tables
+    ));
+   }
+  catch (API_Exception $e)
+   {
+    drupal_set_message(t('Transaction error: @error', array(
+      '@error' => htmlspecialchars($e->getMessage())
+    )), 'error', false);
+    
+    commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
+    drupal_goto(commerce_checkout_order_uri($order));
+   }
+  
+  /* if($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
+  {
+  if($msp->orders->result->success){
+  drupal_goto(url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
+  }    
+  
+  }else{
+  $form['#action'] = $msp->orders->getPaymentLink();
+  }*/
+  
+  $form['#action'] = $msp->orders->getPaymentLink();
+  $form['submit']  = array(
+    '#type' => 'submit',
+    '#value' => t('Start payment')
+  );
+  return $form;
+ }
 
 
 
 function parseAddress($street_address)
-{
-    $address   = $street_address;
-    $apartment = "";
+ {
+  $address   = $street_address;
+  $apartment = "";
+  
+  $offset = strlen($street_address);
+  
+  while (($offset = rstrpos($street_address, ' ', $offset)) !== false)
+   {
+    if ($offset < strlen($street_address) - 1 && is_numeric($street_address[$offset + 1]))
+     {
+      $address   = trim(substr($street_address, 0, $offset));
+      $apartment = trim(substr($street_address, $offset + 1));
+      break;
+     }
+   }
+  
+  if (empty($apartment) && strlen($street_address) > 0 && is_numeric($street_address[0]))
+   {
+    $pos = strpos($street_address, ' ');
     
-    $offset = strlen($street_address);
-    
-    while (($offset = rstrpos($street_address, ' ', $offset)) !== false) {
-        if ($offset < strlen($street_address) - 1 && is_numeric($street_address[$offset + 1])) {
-            $address   = trim(substr($street_address, 0, $offset));
-            $apartment = trim(substr($street_address, $offset + 1));
-            break;
-        }
-    }
-    
-    if (empty($apartment) && strlen($street_address) > 0 && is_numeric($street_address[0])) {
-        $pos = strpos($street_address, ' ');
-        
-        if ($pos !== false) {
-            $apartment = trim(substr($street_address, 0, $pos), ", \t\n\r\0\x0B");
-            $address   = trim(substr($street_address, $pos + 1));
-        }
-    }
-    
-    return array(
-        $address,
-        $apartment
-    );
-}
+    if ($pos !== false)
+     {
+      $apartment = trim(substr($street_address, 0, $pos), ", \t\n\r\0\x0B");
+      $address   = trim(substr($street_address, $pos + 1));
+     }
+   }
+  
+  return array(
+    $address,
+    $apartment
+  );
+ }
 
 
 function rstrpos($haystack, $needle, $offset = null)
-{
-    $size = strlen($haystack);
-    
-    if (is_null($offset)) {
-        $offset = $size;
-    }
-    
-    $pos = strpos(strrev($haystack), strrev($needle), $size - $offset);
-    
-    if ($pos === false) {
-        return false;
-    }
-    
-    return $size - $pos - strlen($needle);
-}
+ {
+  $size = strlen($haystack);
+  
+  if (is_null($offset))
+   {
+    $offset = $size;
+   }
+  
+  $pos = strpos(strrev($haystack), strrev($needle), $size - $offset);
+  
+  if ($pos === false)
+   {
+    return false;
+   }
+  
+  return $size - $pos - strlen($needle);
+ }
 
 /**
  * Defines the payment callback.
@@ -585,87 +650,100 @@ function rstrpos($haystack, $needle, $offset = null)
  *   An url used by MultiSafepay to update the transaction
  */
 function commerce_multisafepay_json_payment_callback()
-{
-    $msp            = new API_Client;
-    $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
-    
-    if (!$payment_method['settings']['multisafepay_environment']) {
-        $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
-        $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
-    } else {
-        $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
-        $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
-    }
-    
-    $ext_order         = $msp->orders->get($_GET['transactionid']);
-    $status            = $ext_order->status;
-    $transaction_ids   = array();
-    $transaction_ids[] = $_GET['transactionid'];
-    $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
-    $transaction       = $transactions[$_GET['transactionid']];
-    
-    $created  = new DateTime($ext_order->created);
-    $modified = new DateTime($ext_order->modified);
-    
-    $order = commerce_order_load($transaction->order_id);
-    
-    if ($status == 'completed') {
-        $transaction->remote_status  = strtoupper($status);
-        $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay_json';
-        $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-        $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-        $transaction->amount         = $ext_order->amount;
-        $transaction->currency_code  = $ext_order->currency;
-        $transaction->created        = $created->getTimestamp();
-        $transaction->changed        = $modified->getTimestamp();
-        commerce_payment_transaction_save($transaction);
-    } elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired') {
-        $transaction->remote_status  = strtoupper($status);
-        $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay_json';
-        $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
-        $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-        $transaction->amount         = $ext_order->amount;
-        $transaction->currency_code  = $ext_order->currency;
-        $transaction->created        = $created->getTimestamp();
-        $transaction->changed        = $modified->getTimestamp();
-        commerce_payment_transaction_save($transaction);
-    } elseif ($status == 'uncleared') {
-        $transaction->remote_status  = strtoupper($status);
-        $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay_json';
-        $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
-        $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-        $transaction->amount         = $ext_order->amount;
-        $transaction->currency_code  = $ext_order->currency;
-        $transaction->created        = $created->getTimestamp();
-        $transaction->changed        = $modified->getTimestamp();
-        commerce_payment_transaction_save($transaction);
-    } elseif ($status == 'shipped') {
-        $transaction->remote_status  = strtoupper($status);
-        $transaction->remote_id      = $ext_order->transaction_id;
-        $transaction->payment_method = 'commerce_multisafepay_json';
-        $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-        $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-        $transaction->amount         = $ext_order->amount;
-        $transaction->currency_code  = $ext_order->currency;
-        $transaction->created        = $created->getTimestamp();
-        $transaction->changed        = $modified->getTimestamp();
-        commerce_payment_transaction_save($transaction);
-    }
-    
-    if (isset($_GET['type']) && $_GET['type'] == 'initial') {
-        $url = url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
-            'absolute' => TRUE
-        ));
-        echo '<a href=' . $url . '>Klik hier om terug te keren naar de website</a>';
-        drupal_exit();
-    } else {
-        echo 'ok';
-        drupal_exit();
-    }
-}
+ {
+  $msp            = new API_Client;
+  $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  
+  if (!$payment_method['settings']['multisafepay_environment'])
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
+    $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
+   }
+  else
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+    $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
+   }
+  
+  $ext_order         = $msp->orders->get($_GET['transactionid']);
+  $status            = $ext_order->status;
+  $transaction_ids   = array();
+  $transaction_ids[] = $_GET['transactionid'];
+  $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
+  $transaction       = $transactions[$_GET['transactionid']];
+  
+  $created  = new DateTime($ext_order->created);
+  $modified = new DateTime($ext_order->modified);
+  
+  $order = commerce_order_load($transaction->order_id);
+  
+  if ($status == 'completed')
+   {
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+   }
+  elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
+   {
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+   }
+  elseif ($status == 'uncleared')
+   {
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+   }
+  elseif ($status == 'shipped')
+   {
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+   }
+  
+  if (isset($_GET['type']) && $_GET['type'] == 'initial')
+   {
+    $url = url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+      'absolute' => TRUE
+    ));
+    echo '<a href=' . $url . '>Klik hier om terug te keren naar de website</a>';
+    drupal_exit();
+   }
+  else
+   {
+    echo 'ok';
+    drupal_exit();
+   }
+ }
 
 
 /**
@@ -679,23 +757,23 @@ function commerce_multisafepay_json_payment_callback()
  *   An array indicating the amount and currency code to charge.
  */
 function commerce_multisafepay_json_transaction($payment_method, $order, $charge)
-{
-    $wrapper = entity_metadata_wrapper('commerce_order', $order);
-    
-    $transaction                 = commerce_payment_transaction_new('multisafepay', $order->order_id);
-    $transaction->instance_id    = $payment_method['instance_id'];
-    $transaction->amount         = $charge;
-    $transaction->currency_code  = $wrapper->commerce_order_total->currency_code->value();
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
-    $transaction->remote_id      = "";
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->remote_status  = "MultiSafepay Pre Transaction";
-    $transaction->message        = t('This order is waiting for processing at MultiSafepay.');
-    
-    commerce_payment_transaction_save($transaction);
-    $order->data['commerce_multisafepay_json_orderid'] = $transaction->transaction_id;
-    return $transaction->transaction_id;
-}
+ {
+  $wrapper = entity_metadata_wrapper('commerce_order', $order);
+  
+  $transaction                 = commerce_payment_transaction_new('multisafepay', $order->order_id);
+  $transaction->instance_id    = $payment_method['instance_id'];
+  $transaction->amount         = $charge;
+  $transaction->currency_code  = $wrapper->commerce_order_total->currency_code->value();
+  $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
+  $transaction->remote_id      = "";
+  $transaction->payment_method = 'commerce_multisafepay_json';
+  $transaction->remote_status  = "MultiSafepay Pre Transaction";
+  $transaction->message        = t('This order is waiting for processing at MultiSafepay.');
+  
+  commerce_payment_transaction_save($transaction);
+  $order->data['commerce_multisafepay_json_orderid'] = $transaction->transaction_id;
+  return $transaction->transaction_id;
+ }
 
 
 
@@ -706,9 +784,9 @@ function commerce_multisafepay_json_transaction($payment_method, $order, $charge
  * visible to those that have JS turned off.
  */
 function commerce_multisafepay_json_waiting_page()
-{
-    print('<html><head><title></title></head><body><p>');
-    print t('Please wait to be redirected to MultiSafepay.');
-    print('</p></body></html>');
-    drupal_exit();
-}
+ {
+  print('<html><head><title></title></head><body><p>');
+  print t('Please wait to be redirected to MultiSafepay.');
+  print('</p></body></html>');
+  drupal_exit();
+ }
