@@ -345,7 +345,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
    }
   else
    {
-    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key'].'9');
     $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
    }
   
@@ -554,9 +554,12 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
    }
   catch (API_Exception $e)
    {
+   	
     drupal_set_message(t('Transaction error: @error', array(
       '@error' => htmlspecialchars($e->getMessage())
     )), 'error', false);
+    
+    watchdog('MultiSafepay', 'Transaction error: @error', array('@error' => htmlspecialchars($e->getMessage())), WATCHDOG_ERROR);
     
     commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
     drupal_goto(commerce_checkout_order_uri($order));

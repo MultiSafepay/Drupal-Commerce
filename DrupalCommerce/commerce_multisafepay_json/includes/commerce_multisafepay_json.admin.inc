@@ -124,6 +124,7 @@ function commerce_multisafepay_json_refund_form_submit($form, &$form_state)
         drupal_set_message(t('Refund failed. @reason', array(
             '@reason' => $e->getMessage()
         )), 'error');
+        watchdog('MultiSafepay', 'Refund failed. @reason', array('@reason' => htmlspecialchars($e->getMessage())), WATCHDOG_ERROR);
     }
     
     // Create a new transaction to record the credit.
@@ -182,6 +183,8 @@ function commerce_multisafepay_json_shipped_form($form, &$form_state, $order, $t
         drupal_set_message(t('Failed to set transaction to Shipped. @reason', array(
             '@reason' => $e->getMessage()
         )), 'error');
+        
+        watchdog('MultiSafepay', 'Failed to set transaction to Shipped. @reason', array('@reason' => htmlspecialchars($e->getMessage())), WATCHDOG_ERROR);
     }
 
 	$transaction->remote_status  = 'SHIPPED';
