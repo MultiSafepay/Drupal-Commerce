@@ -345,7 +345,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
    }
   else
    {
-    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key'].'9');
+    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
     $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
    }
   
