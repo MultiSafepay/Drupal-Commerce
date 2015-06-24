@@ -4,3 +4,4 @@ core = 7.x
 package = Commerce - Payment
 dependencies[] = commerce
 dependencies[] = commerce_payment
+dependencies[] = commerce_multisafepay_json
