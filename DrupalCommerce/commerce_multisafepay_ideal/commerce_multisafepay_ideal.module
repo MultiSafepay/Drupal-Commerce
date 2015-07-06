@@ -86,7 +86,7 @@ function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, 
         $issuers[$issuer->code] = t($issuer->description);
     }
 
-    $module_path = $base_url . '/' . drupal_get_path('module', 'commerce_multisafepay');
+    $module_path = $base_url . '/' . drupal_get_path('module', 'commerce_multisafepay_json');
 
     
     $form = array();
