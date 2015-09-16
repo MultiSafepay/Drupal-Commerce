@@ -675,8 +675,11 @@ function commerce_multisafepay_json_payment_callback()
   $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
   $transaction       = $transactions[$_GET['transactionid']];
   
-  $created  = new DateTime($ext_order->created);
-  $modified = new DateTime($ext_order->modified);
+  $format = "dd-MM-yyyy HH:mm:ss"; //or something else that date() accepts as a format
+ 
+  
+  $created  = date_format(date_create(new DateTime($ext_order->created)), $format);  //new DateTime($ext_order->created);
+  $modified = date_format(date_create(new DateTime($ext_order->modified)), $format);//new DateTime($ext_order->modified);
   
   $order = commerce_order_load($transaction->order_id);
   
@@ -692,8 +695,8 @@ function commerce_multisafepay_json_payment_callback()
     $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
     $transaction->amount         = $ext_order->amount;
     $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
+    $transaction->created        = $created;
+    $transaction->changed        = $modified;
     commerce_payment_transaction_save($transaction);
    }
   elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
@@ -705,8 +708,8 @@ function commerce_multisafepay_json_payment_callback()
     $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
     $transaction->amount         = $ext_order->amount;
     $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
+    $transaction->created        = $created;
+    $transaction->changed        = $modified;
     commerce_payment_transaction_save($transaction);
    }
   elseif ($status == 'uncleared')
@@ -718,8 +721,8 @@ function commerce_multisafepay_json_payment_callback()
     $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
     $transaction->amount         = $ext_order->amount;
     $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
+    $transaction->created        = $created;
+    $transaction->changed        = $modified;
     commerce_payment_transaction_save($transaction);
    }
   elseif ($status == 'shipped')
@@ -731,8 +734,8 @@ function commerce_multisafepay_json_payment_callback()
     $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
     $transaction->amount         = $ext_order->amount;
     $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
+    $transaction->created        = $created;
+    $transaction->changed        = $modified;
     commerce_payment_transaction_save($transaction);
    }
   
