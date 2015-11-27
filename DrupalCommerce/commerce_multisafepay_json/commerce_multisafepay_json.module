@@ -575,12 +575,14 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
   $form['#action'] = $msp->orders->getPaymentLink();
   }*/
   
-  $form['#action'] = $msp->orders->getPaymentLink();
+   drupal_goto($msp->orders->getPaymentLink());
+   exit;
+  /*$form['#action'] = $msp->orders->getPaymentLink();
   $form['submit']  = array(
     '#type' => 'submit',
     '#value' => t('Start payment')
   );
-  return $form;
+  return $form;*/
  }
 
 
