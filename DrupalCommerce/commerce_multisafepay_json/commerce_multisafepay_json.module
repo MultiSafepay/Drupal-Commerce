@@ -576,6 +576,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
   }*/
   
    drupal_goto($msp->orders->getPaymentLink());
+   commerce_cart_order_empty($order);
    exit;
   /*$form['#action'] = $msp->orders->getPaymentLink();
   $form['submit']  = array(
