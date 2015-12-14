@@ -64,7 +64,11 @@ function commerce_multisafepay_ideal_settings_form($settings = NULL)
 
 function commerce_multisafepay_ideal_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
     global $base_url;
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+    //$payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+    $payment_api_rule = 'commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json';
+    drupal_alter('multisafepay_api_rule', $payment_api_rule, $order);
+    $payment = commerce_payment_method_instance_load($payment_api_rule);
+    
     $payment_method['settings'] += $payment['settings'];
     
     

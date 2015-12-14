@@ -96,7 +96,11 @@ function commerce_multisafepay_json_refund_form_submit($form, &$form_state)
 {
     $msp            = new API_Client;
     $payment_method = $form_state['payment_method'];
-     $payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+     //$payment = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+    $payment_api_rule = 'commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json';
+    drupal_alter('multisafepay_api_rule', $payment_api_rule, $order);
+    $payment = commerce_payment_method_instance_load($payment_api_rule);
+    
     $payment_method['settings'] +=$payment['settings'];
     
     if (!$payment_method['settings']['multisafepay_environment']) {
