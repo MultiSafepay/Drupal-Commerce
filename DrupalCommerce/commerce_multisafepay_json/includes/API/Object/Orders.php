@@ -2,36 +2,32 @@
 
 class API_Object_Orders extends API_Object_Core {
 
-    public $success;
-    public $data;
-    
-    public function patch($body, $endpoint) {
-        $result = parent::patch(json_encode($body), $endpoint);
-        $this->success = $result->success;
-        $this->data = $result->data;
-        return $result;
-    }
+  public $success;
+  public $data;
 
-    
-    public function get($id) {
-        $result = parent::get('orders', $id);
-        $this->success = $result->success;
-        $this->data = $result->data;
-        return $this->data;
-    }
+  public function patch($body, $endpoint = '') {
+    $result = parent::patch(json_encode($body), $endpoint);
+    $this->success = $result->success;
+    $this->data = $result->data;
+    return $result;
+  }
 
-    public function post($body, $endpoint = 'orders') {
-        $result = parent::post(json_encode($body), $endpoint);
-        if(isset($result->succes)){
-        $this->success = $result->success;
-        }
-        $this->data = $result->data;
-        return $this->data;
-    }
+  public function get($type = 'orders', $id, $body = array(), $query_string = false) {
+    $result = parent::get($type, $id, $body, $query_string);
+    $this->success = $result->success;
+    $this->data = $result->data;
+    return $this->data;
+  }
 
+  public function post($body, $endpoint = 'orders') {
+    $result = parent::post(json_encode($body), $endpoint);
+    $this->success = $result->success;
+    $this->data = $result->data;
+    return $this->data;
+  }
 
-    public function getPaymentLink() {
-        return $this->data->payment_url;
-    }
+  public function getPaymentLink() {
+    return $this->data->payment_url;
+  }
 
 }
