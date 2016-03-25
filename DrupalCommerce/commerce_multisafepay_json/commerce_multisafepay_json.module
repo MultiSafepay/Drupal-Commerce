@@ -405,7 +405,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
         if (function_exists('commerce_tax_components'))
          {
           $tax                          = commerce_tax_components($price['data']['components']);
-          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
+          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTW0';
           $taxed_amount                 = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
           $tax_applied_rates[$tax_rate] = $tax_rate;
          }
@@ -464,7 +464,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
         if (function_exists('commerce_tax_components'))
          {
           $tax                          = commerce_tax_components($price['data']['components']);
-          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTWO';
+          $tax_rate                     = count($tax) ? $tax[0]['price']['data']['tax_rate']['rate'] : 'BTW0';
           $taxed_amount                 = !empty($tax[0]['price']['amount']) ? $tax[0]['price']['amount'] : 0;
           $tax_applied_rates[$tax_rate] = $tax_rate;
          }
@@ -580,7 +580,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
   }*/
   
    drupal_goto($msp->orders->getPaymentLink());
-   commerce_cart_order_empty($order);
+   //commerce_cart_order_empty($order);
    exit;
   /*$form['#action'] = $msp->orders->getPaymentLink();
   $form['submit']  = array(
