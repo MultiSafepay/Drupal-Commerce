@@ -61,6 +61,15 @@ function commerce_multisafepay_json_menu()
     'type' => MENU_CALLBACK
   );
   
+  $items['multisafepay/redirect'] = array(
+    'page callback' => 'commerce_multisafepay_json_payment_redirect',
+    'page arguments' => array(
+      1
+    ),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK
+  );
+  
   return $items;
  }
 
@@ -512,6 +521,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
       "amount" => $wrapper->commerce_order_total->amount->value(),
       "description" => 'Order #' . $order->order_id,
       "var1" => $order->order_id,
+      "var2" => $order->data['payment_redirect_key'],
       "items" => $item_list,
       "manual" => "false",
       "gateway" => $payment_method['settings']['gateway'],
@@ -520,9 +530,12 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
         "notification_url" => url('multisafepay/callback', array(
           'absolute' => TRUE
         )) . '?type=initial',
-        "redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
+        /*"redirect_url" => url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array(
           'absolute' => TRUE
-        )),
+        )),*/
+        "redirect_url" => url('multisafepay/redirect', array(
+          'absolute' => TRUE
+        )) . '?type=initial',
         "cancel_url" => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
           'absolute' => TRUE
         )),
@@ -763,6 +776,110 @@ function commerce_multisafepay_json_payment_callback()
     drupal_exit();
    }
  }
+ 
+ 
+ 
+ /**
+ * Defines the payment redirect.
+ *
+ *redirect consumer back to the store
+ */
+function commerce_multisafepay_json_payment_redirect()
+ {
+	$msp            = new API_Client;
+  $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  
+  if (!$payment_method['settings']['multisafepay_environment'])
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
+    $msp->setApiUrl('https://api.multisafepay.com/v1/json/');
+   }
+  else
+   {
+    $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
+    $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
+   }
+  
+  $ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
+  $status            = $ext_order->status;
+  $transaction_ids   = array();
+  $transaction_ids[] = $_GET['transactionid'];
+  $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
+  $transaction       = $transactions[$_GET['transactionid']];
+  
+  $created  = new DateTime($ext_order->created);
+  $modified = new DateTime($ext_order->modified);
+  
+  $order = commerce_order_load($transaction->order_id);
+  
+  if ($status == 'completed')
+   {
+	
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+    commerce_payment_redirect_pane_next_page($order);
+    
+   }
+  elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
+   {
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+    commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
+   }
+  elseif ($status == 'uncleared')
+   {
+	
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+    commerce_payment_redirect_pane_next_page($order);   
+   }
+  elseif ($status == 'shipped')
+   {
+	
+    $transaction->remote_status  = strtoupper($status);
+    $transaction->remote_id      = $ext_order->transaction_id;
+    $transaction->payment_method = 'commerce_multisafepay_json';
+    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+    $transaction->amount         = $ext_order->amount;
+    $transaction->currency_code  = $ext_order->currency;
+    $transaction->created        = $created->getTimestamp();
+    $transaction->changed        = $modified->getTimestamp();
+    commerce_payment_transaction_save($transaction);
+    commerce_payment_redirect_pane_next_page($order);   
+   }
+$_SESSION['commerce_cart_orders'] =array($ext_order->var1 =>$ext_order->var1);
+	  
+	  $ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
+	 ///print_r($ext_order);exit;
+	  $url = url('checkout/' . $ext_order->var1 . '/payment/return/' . $ext_order->var2, array('absolute' => TRUE));
+
+	 	drupal_goto($url);
+	  }
 
 
 /**
