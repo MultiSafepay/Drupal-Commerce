@@ -63,7 +63,7 @@ function commerce_multisafepay_klarna_redirect_form($form, &$form_state, $order,
             'absolute' => TRUE
         )),
         'payment_method' => $payment_method['instance_id'],
-        'gateway' => 'KLARNA_INV',
+        'gateway' => 'KLARNA',
         'issuer' => '',
         'type' => 'redirect'
     );
