@@ -399,8 +399,9 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
   $tax_applied_rates         = array();
   $tax_applied_rates['BTW0'] = '0.00';
   
-  if ($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
-   {
+  //We will now include all cart data for all payment methods according to PLGDRUPC-29. This will create better payment pages and communication.
+  //if ($payment_method['settings']['gateway'] == 'PAYAFTER' || $payment_method['settings']['gateway'] == 'KLARNA')
+   //{
     foreach ($wrapper->commerce_line_items as $delta => $line_item_wrapper)
      {
       if (module_exists('commerce_shipping') && $line_item_wrapper->type->value() == 'shipping')
@@ -513,7 +514,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
         );
        }
      }
-   }
+   //}
    unset($tax_applied_rates['shipping']);
   
   foreach ($tax_applied_rates as $key => $value)
