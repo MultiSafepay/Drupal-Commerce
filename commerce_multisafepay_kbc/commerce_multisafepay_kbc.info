@@ -1,5 +1,5 @@
-name = Commerce MultiSafepay KBC/CBC
-description = Integrates MultiSafepay KBC/CBC Payment Method
+name = Commerce MultiSafepay KBC
+description = Integrates MultiSafepay KBC Payment Method
 core = 7.x
 package = Commerce - Payment
 dependencies[] = commerce

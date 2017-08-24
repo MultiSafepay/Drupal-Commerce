@@ -39,11 +39,11 @@ function commerce_multisafepay_kbc_commerce_payment_method_info()
     if (!empty($payment['settings']['multisafepay_title'])) {
         $gateway_title = $payment['settings']['multisafepay_title'];
     } else {
-        $gateway_title = 'KBC/CBC';
+        $gateway_title = 'KBC';
     }
     
     $payment_methods['commerce_multisafepay_kbc'] = array(
-        'title' => 'MultiSafepay KBC/CBC',
+        'title' => 'MultiSafepay KBC',
         'display_title' => $gateway_title,
         'description' => t('Enable payments using multisafepay Global payments'),
         'terminal' => FALSE,
