@@ -31,18 +31,18 @@ require_once dirname(__FILE__) . "/../commerce_multisafepay_json/commerce_multis
  *
  * Defines Multisafepay's Frontend payment method.
  */
-function commerce_multisafepay_mistercash_commerce_payment_method_info()
+function commerce_multisafepay_bancontact_commerce_payment_method_info()
 {
     $payment_methods = array();
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay_mistercash|commerce_payment_commerce_multisafepay_mistercash');
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_bancontact|commerce_payment_commerce_multisafepay_bancontact');
     if (!empty($payment['settings']['multisafepay_title'])) {
         $gateway_title = $payment['settings']['multisafepay_title'];
     } else {
-        $gateway_title = 'Bancontact / MisterCash';
+        $gateway_title = 'Bancontact';
     }
     
-    $payment_methods['commerce_multisafepay_mistercash'] = array(
-        'title' => 'MultiSafepay Bancontact/mistercash',
+    $payment_methods['commerce_multisafepay_bancontact'] = array(
+        'title' => 'MultiSafepay Bancontact',
         'display_title' => $gateway_title,
         'description' => t('Enable payments using multisafepay Global payments'),
         'terminal' => FALSE,
@@ -56,7 +56,7 @@ function commerce_multisafepay_mistercash_commerce_payment_method_info()
 /**
  * Payment method callback: Generates the payment method settings form.
  */
-function commerce_multisafepay_mistercash_settings_form($settings = NULL)
+function commerce_multisafepay_bancontact_settings_form($settings = NULL)
 {
     $form     = array();
     $settings = (array) $settings + array(
@@ -74,7 +74,7 @@ function commerce_multisafepay_mistercash_settings_form($settings = NULL)
 /**
  * Redirects the user to the hosted payment page.
  */
-function commerce_multisafepay_mistercash_redirect_form($form, &$form_state, $order, $payment_method)
+function commerce_multisafepay_bancontact_redirect_form($form, &$form_state, $order, $payment_method)
 {
     $payment_method['settings'] += array(
         'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
