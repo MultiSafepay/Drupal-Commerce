@@ -192,9 +192,9 @@ function commerce_multisafepay_json_shipped_form($form, &$form_state, $order, $t
     try {
         $order = $msp->orders->patch(
                 array(
-            "tracktrace_code" => 'null',
-            "carrier" => 'null',
-            "ship_date" => time(),
+            "tracktrace_code" => '',
+            "carrier" => '',
+            "ship_date" => date('Y-m-d H:i:s'),
             "reason" => 'Shipped'
                 ), $endpoint);
     } catch (MultiSafepay_API_Exception $e) {
