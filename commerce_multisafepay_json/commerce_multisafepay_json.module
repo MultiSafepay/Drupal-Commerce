@@ -172,7 +172,7 @@ function commerce_multisafepay_json_shipped_access($order, $transaction)
    }
   if ($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' 
           && $transaction->instance_id != 'commerce_multisafepay_json_klarna|commerce_payment_commerce_multisafepay_json_klarna'
-          $transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_einvoice')
+          && $transaction->instance_id != 'commerce_multisafepay_einvoice|commerce_payment_commerce_multisafepay_einvoice')
    {
     return FALSE;
    }
