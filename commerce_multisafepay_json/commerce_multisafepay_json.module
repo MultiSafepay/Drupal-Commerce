@@ -569,7 +569,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
       "customer" => array(
         "locale" => $language->language . '_' . strtoupper($language->language),
         "ip_address" => ip_address(),
-        "forwarded_ip" => $_SERVER["REMOTE_ADDR"],
+        "forwarded_ip" => isset($_SERVER["HTTP_X_FORWARDED_FOR"]) ? $_SERVER["HTTP_X_FORWARDED_FOR"] : "",
         "first_name" => $first_name,
         "last_name" => $wrapper->commerce_customer_billing->commerce_customer_address->last_name->value(),
         "address1" => $street,
