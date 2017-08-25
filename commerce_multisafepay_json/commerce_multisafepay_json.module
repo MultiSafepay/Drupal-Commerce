@@ -170,12 +170,6 @@ function commerce_multisafepay_json_shipped_access($order, $transaction)
    {
     return FALSE;
    }
-  if ($transaction->instance_id != 'commerce_multisafepay_payafter|commerce_payment_commerce_multisafepay_payafter' 
-          && $transaction->instance_id != 'commerce_multisafepay_json_klarna|commerce_payment_commerce_multisafepay_json_klarna'
-          && $transaction->instance_id != 'commerce_multisafepay_einvoice|commerce_payment_commerce_multisafepay_einvoice')
-   {
-    return FALSE;
-   }
   
   // Return FALSE if the transaction was not a success.
   if ($transaction->status != COMMERCE_PAYMENT_STATUS_SUCCESS)
