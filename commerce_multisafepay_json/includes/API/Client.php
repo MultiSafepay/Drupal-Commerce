@@ -106,6 +106,8 @@ class API_Client
         if ($this->debug) {
             $this->request = $http_body;
             $this->response = $body;
+            $file_hash = substr(hash('sha512', substr($this->api_key, 0, 10)), 0 ,10);
+            $this->requestLogger(print_r($this->request,true),print_r($this->response,true), "INFO", realpath(dirname(__FILE__)). DIRECTORY_SEPARATOR ."logs".DIRECTORY_SEPARATOR .$file_hash."-multisafepay_requests.log", $url, $http_method);
         }
 
         if (curl_errno($ch)) {
@@ -115,5 +117,11 @@ class API_Client
         curl_close($ch);
         return $body;
     }
+    
+    
 
+    function requestLogger($request, $response, $level='i', $file='request', $url, $method) {
+    	error_log(date("[Y-m-d H:i:s]")."\t[".$level."]\t[".$url."]\t[".$method."]\t[".basename(__FILE__)."]\t".$request."\n", 3, $file);
+    	error_log(date("[Y-m-d H:i:s]")."\t[".$level."]\t[".$url."]\t[".$method."]\t[".basename(__FILE__)."]\t".$response."\n", 3, $file);
+	}
 }

@@ -129,6 +129,7 @@ function commerce_multisafepay_json_refund_form_submit($form, &$form_state)
         $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
         $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
     }
+    $msp->setDebug($payment_method['settings']['multisafepay_debug']);
 
     $order_int = $form_state['order'];
     $transaction = $form_state['transaction'];
@@ -185,6 +186,7 @@ function commerce_multisafepay_json_shipped_form($form, &$form_state, $order, $t
         $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
         $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
     }
+    $msp->setDebug($payment_method['settings']['multisafepay_debug']);
 
     $transactionid = $transaction->transaction_id;
     $endpoint = 'orders/' . $transactionid;

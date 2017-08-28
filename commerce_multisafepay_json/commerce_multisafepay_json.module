@@ -239,6 +239,7 @@ function commerce_multisafepay_json_settings_form($settings = NULL)
     'multisafepay_environment' => '',
     'multisafepay_live_api_key' => '',
     'multisafepay_test_api_key' => '',
+    'multisafepay_debug' => '',
     'multisafepay_title' => ''
   );
   
@@ -257,6 +258,18 @@ function commerce_multisafepay_json_settings_form($settings = NULL)
     '#options' => array(
       t('Production'),
       t('Test')
+    )
+  );
+  
+  $form['multisafepay_debug'] = array(
+    '#required' => TRUE,
+    '#type' => 'radios',
+    '#title' => t('Debug enabled'),
+    '#default_value' => $settings['multisafepay_debug'],
+    '#description' => t('This will store all api requests within a log file'),
+    '#options' => array(
+      t('False'),
+      t('True')
     )
   );
   
@@ -378,6 +391,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
     $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
     $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
    }
+   $msp->setDebug($payment_method['settings']['multisafepay_debug']);
   
   $int_transaction_id = commerce_multisafepay_json_transaction($payment_method, $order, $wrapper->commerce_order_total->amount->value());
   
@@ -707,6 +721,7 @@ function commerce_multisafepay_json_payment_callback()
     $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
     $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
    }
+   $msp->setDebug($payment_method['settings']['multisafepay_debug']);
   
   try {
   	$ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
@@ -826,6 +841,7 @@ function commerce_multisafepay_json_payment_redirect()
     $msp->setApiKey($payment_method['settings']['multisafepay_test_api_key']);
     $msp->setApiUrl('https://testapi.multisafepay.com/v1/json/');
    }
+   $msp->setDebug($payment_method['settings']['multisafepay_debug']);
   
   try {
   	$ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
