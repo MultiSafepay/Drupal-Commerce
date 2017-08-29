@@ -177,8 +177,11 @@ function commerce_multisafepay_json_shipped_form($form, &$form_state, $order, $t
 
     $msp = new API_Client;
 
-    $payment_method = $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
-
+    //$payment_method = $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+    $payment_api_rule = 'commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json';
+    drupal_alter('multisafepay_api_rule', $payment_api_rule, $order);
+    $payment_method = commerce_payment_method_instance_load($payment_api_rule);
+  
     if (!$payment_method['settings']['multisafepay_environment']) {
         $msp->setApiKey($payment_method['settings']['multisafepay_live_api_key']);
         $msp->setApiUrl('https://api.multisafepay.com/v1/json/');

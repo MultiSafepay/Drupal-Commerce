@@ -711,7 +711,10 @@ function commerce_multisafepay_json_payment_callback()
  {
 	
   $msp            = new API_Client;
-  $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  //$payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  $payment_api_rule = 'commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json';
+  drupal_alter('multisafepay_api_rule', $payment_api_rule, $order);
+  $payment_method = commerce_payment_method_instance_load($payment_api_rule);
   
   if (!$payment_method['settings']['multisafepay_environment'])
    {
@@ -831,7 +834,10 @@ function commerce_multisafepay_json_payment_callback()
 function commerce_multisafepay_json_payment_redirect()
  {
 	$msp            = new API_Client;
-  $payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  //$payment_method = commerce_payment_method_instance_load('commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json');
+  $payment_api_rule = 'commerce_multisafepay_json|commerce_payment_commerce_multisafepay_json';
+  drupal_alter('multisafepay_api_rule', $payment_api_rule, $order);
+  $payment_method = commerce_payment_method_instance_load($payment_api_rule);
   
   if (!$payment_method['settings']['multisafepay_environment'])
    {
