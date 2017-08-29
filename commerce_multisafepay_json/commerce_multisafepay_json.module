@@ -545,9 +545,7 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
   $street      = $address;
   $housenumber = $apartment;
   
-  try
-   {
-    $msp_order = array(
+  $msp_order = array(
       "type" => $payment_method['settings']['type'],
       "order_id" => $int_transaction_id,
       "currency" => $wrapper->commerce_order_total->currency_code->value(),
@@ -602,6 +600,8 @@ function commerce_multisafepay_json_order_form($form, &$form_state, $order, $pay
       "checkout_options" => $tax_tables
     );
     drupal_alter('multisafepay_json_order_data', $msp_order, $order);
+  try
+   {    
     $msp_order = $msp->orders->post($msp_order);
    }
   catch (API_Exception $e)
