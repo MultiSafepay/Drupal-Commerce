@@ -43,5 +43,6 @@ $rule_complete_to_shipped = '{ "rules_commerce_multisafepay_order_complete_multi
   
   $rules['rules_multisafepay_order_paid_in_full_order_state_to_processing'] = rules_import($rule_paid_to_processing);
   $rules['rules_commerce_multisafepay_order_complete_multisafepay_shipped'] = rules_import($rule_complete_to_shipped);
+  
   return $rules;
 }

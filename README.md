@@ -24,20 +24,18 @@ Commerce store. When offering iDEAL as a payment method, the customer can select
 the iDEAL issuer from within your store.
 
 This module also supports the MultiSafepay Refund API call so that refunds can 
-be done from within the Drupal Commerce transaction of an order. When offering 
-Pay After Delivery you can also set the status to shipped at MultiSafepay, 
-directly from within your Drupal Commerce store.
+be done from within the Drupal Commerce transaction of an order. 
 
 
 FEATURES
 --------
 
-The new Commerce MultiSafepay plugins use the new JSON API and have support for
-1. Adding separate payment methods added to Commerce checkout
+The new Commerce MultiSafepay plugins use the new JSON API and has support for
+1. Adding separate payment methods to Commerce checkout
 2. Pay After Delivery
 3. Direct iDEAL (Select the issuer from within your drupal commerce store)
 4. Refund API
-5. Shipped API (Pay After Deliver)
+5. Shipped API 
 
 
 
@@ -49,6 +47,17 @@ uploaded the plugins can be installed from within Drupal. All plugins depend on
 the main commerce_multisafepay_json plugin. That is the main plugin and must
 always be configured.
 
+RULES
+--------------
+
+On installation of the main module, two additonal rules are installed (but not enabled):
+1. MultiSafepay Order paid in full: Order state to processing
+2. MultiSafepay Order Complete: Shipped at MultiSafepay
+
+When the first one is enabled, the order state will be set to processing once the order has been paid in full.
+The second rule will update the order status of the transaction at MultiSafepay. This will activate the Pay After Delivery/Klarna/E-invoice invoicing process.
+
+
 
 INTEGRATION (WITH OTHER MODULES)
 --------------------------------
@@ -57,10 +66,6 @@ The plugins have support for:
 1. Commerce_fees
 2. Commerce_discounts
 3. Commerce_coupons
-
-These can be used in combination with Pay After Delivery, where all cart data
-is need to create a transaction request at MultiSafepay.
-
 
 
 TROUBLESHOOTING (KNOWN THEME ISSUES)

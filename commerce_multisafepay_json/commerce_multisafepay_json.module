@@ -694,6 +694,74 @@ function rstrpos($haystack, $needle, $offset = null)
   return $size - $pos - strlen($needle);
  }
 
+function handle_notification($order, $ext_order, $transaction) 
+ {
+  $status = $ext_order->status;
+  $created = new DateTime($ext_order->created);
+  $modified = new DateTime($ext_order->modified);
+
+  if ($status == 'completed')
+  {
+ 
+   $transaction->remote_status  = strtoupper($status);
+   $transaction->remote_id      = $ext_order->transaction_id;
+   $transaction->payment_method = 'commerce_multisafepay_json';
+   $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+   $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+   $transaction->amount         = $ext_order->amount;
+   $transaction->currency_code  = $ext_order->currency;
+   $transaction->created        = $created->getTimestamp();
+   $transaction->changed        = $modified->getTimestamp();
+   commerce_payment_transaction_save($transaction);
+   commerce_payment_redirect_pane_next_page($order);
+   
+  }
+ elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
+  {
+   $transaction->remote_status  = strtoupper($status);
+   $transaction->remote_id      = $ext_order->transaction_id;
+   $transaction->payment_method = 'commerce_multisafepay_json';
+   $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
+   $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+   $transaction->amount         = $ext_order->amount;
+   $transaction->currency_code  = $ext_order->currency;
+   $transaction->created        = $created->getTimestamp();
+   $transaction->changed        = $modified->getTimestamp();
+   commerce_payment_transaction_save($transaction);
+   commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
+  }
+ elseif ($status == 'uncleared')
+  {
+ 
+   $transaction->remote_status  = strtoupper($status);
+   $transaction->remote_id      = $ext_order->transaction_id;
+   $transaction->payment_method = 'commerce_multisafepay_json';
+   $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
+   $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+   $transaction->amount         = $ext_order->amount;
+   $transaction->currency_code  = $ext_order->currency;
+   $transaction->created        = $created->getTimestamp();
+   $transaction->changed        = $modified->getTimestamp();
+   commerce_payment_transaction_save($transaction);
+   commerce_payment_redirect_pane_next_page($order);   
+  }
+ elseif ($status == 'shipped')
+  {
+ 
+   $transaction->remote_status  = strtoupper($status);
+   $transaction->remote_id      = $ext_order->transaction_id;
+   $transaction->payment_method = 'commerce_multisafepay_json';
+   $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
+   $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
+   $transaction->amount         = $ext_order->amount;
+   $transaction->currency_code  = $ext_order->currency;
+   $transaction->created        = $created->getTimestamp();
+   $transaction->changed        = $modified->getTimestamp();
+   commerce_payment_transaction_save($transaction);
+   commerce_payment_redirect_pane_next_page($order);   
+  }
+ }
+
 /**
  * Defines the payment callback.
  *
@@ -737,77 +805,15 @@ function commerce_multisafepay_json_payment_callback()
     watchdog('MultiSafepay', 'Transaction error: @error', array('@error' => htmlspecialchars($e->getMessage())), WATCHDOG_ERROR);
 	exit;
 	}
-  $status            = $ext_order->status;
+
   $transaction_ids   = array();
   $transaction_ids[] = $_GET['transactionid'];
   $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
   $transaction       = $transactions[$_GET['transactionid']];
   
-  $created  = new DateTime($ext_order->created);
-  $modified = new DateTime($ext_order->modified);
-  
   $order = commerce_order_load($transaction->order_id);
-  
-  if ($status == 'completed')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);
-    
-   }
-  elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
-   {
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
-   }
-  elseif ($status == 'uncleared')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);   
-   }
-  elseif ($status == 'shipped')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);   
-   }
+
+  handle_notification($order, $ext_order, $transaction);
   
   if (isset($_GET['type']) && $_GET['type'] == 'initial')
    {
@@ -862,85 +868,24 @@ function commerce_multisafepay_json_payment_redirect()
 
 	exit;
 	}
-  $status            = $ext_order->status;
+  
   $transaction_ids   = array();
   $transaction_ids[] = $_GET['transactionid'];
   $transactions      = commerce_payment_transaction_load_multiple($transaction_ids);
   $transaction       = $transactions[$_GET['transactionid']];
   
-  $created  = new DateTime($ext_order->created);
-  $modified = new DateTime($ext_order->modified);
-  
   $order = commerce_order_load($transaction->order_id);
-  
-  if ($status == 'completed')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);
-    
-   }
-  elseif ($status == 'cancelled' || $status == 'void' || $status == 'declined' || $status == 'expired')
-   {
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_FAILURE;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_previous_page($order, t('Customer payment submission failed at the payment gateway.'));
-   }
-  elseif ($status == 'uncleared')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_PENDING;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);   
-   }
-  elseif ($status == 'shipped')
-   {
-	
-    $transaction->remote_status  = strtoupper($status);
-    $transaction->remote_id      = $ext_order->transaction_id;
-    $transaction->payment_method = 'commerce_multisafepay_json';
-    $transaction->status         = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message        = ucfirst($status) . ' by using: ' . $ext_order->payment_details->type;
-    $transaction->amount         = $ext_order->amount;
-    $transaction->currency_code  = $ext_order->currency;
-    $transaction->created        = $created->getTimestamp();
-    $transaction->changed        = $modified->getTimestamp();
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_redirect_pane_next_page($order);   
-   }
-$_SESSION['commerce_cart_orders'] =array($ext_order->var1 =>$ext_order->var1);
-	  
-	  $ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
-	 ///print_r($ext_order);exit;
-	  $url = url('checkout/' . $ext_order->var1 . '/payment/return/' . $ext_order->var2, array('absolute' => TRUE));
 
-	 	drupal_goto($url);
-	  }
+  handle_notification($order, $ext_order, $transaction);
+    
+  $_SESSION['commerce_cart_orders'] =array($ext_order->var1 =>$ext_order->var1);
+	  
+  $ext_order         = $msp->orders->get('orders',$_GET['transactionid']);
+  ///print_r($ext_order);exit;
+  $url = url('checkout/' . $ext_order->var1 . '/payment/return/' . $ext_order->var2, array('absolute' => TRUE));
+
+  drupal_goto($url);
+ }
 
 
 /**
