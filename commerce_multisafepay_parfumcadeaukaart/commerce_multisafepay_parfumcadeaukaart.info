@@ -1,0 +1,7 @@
+name = Commerce MultiSafepay Parfum Cadeaukaart
+description = Integrates MultiSafepay Parfum Cadeaukaart Payment Method
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
+dependencies[] = commerce_multisafepay_json

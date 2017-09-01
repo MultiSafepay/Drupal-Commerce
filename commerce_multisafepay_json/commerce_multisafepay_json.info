@@ -1,0 +1,6 @@
+name = Commerce MultiSafepay JSON
+description = Integrates MultiSafepay Payment Methods using the JSON REST API
+core = 7.x
+package = Commerce - Payment
+dependencies[] = commerce
+dependencies[] = commerce_payment
