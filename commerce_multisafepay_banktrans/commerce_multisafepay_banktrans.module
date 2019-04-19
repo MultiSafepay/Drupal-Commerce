@@ -87,7 +87,7 @@ function commerce_multisafepay_banktrans_redirect_form($form, &$form_state, $ord
         'payment_method' => $payment_method['instance_id'],
         'gateway' => 'BANKTRANS',
         'issuer' => '',
-        'type' => 'redirect'
+        'type' => 'direct'
     );
     return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
 }
