@@ -1,84 +1,42 @@
-COMMERCE MULTISAFEPAY JSON
-----------------
+<p align="center">
+  <img src="https://www.multisafepay.com/img/multisafepaylogo.svg" width="400px" position="center">
+</p>
 
-CONTENTS OF THIS FILE
----------------------
+# MultiSafepay plugin for Drupal Commerce
 
- * Introduction
- * Features
- * Implementation
- * Integration (with other modules)
- * Troubleshooting (known Theme issues)
- * Contributions are welcome!!
+Easily integrate MultiSafepay payment solutions into your Drupal Commerce webshop with the free MultiSafepay Drupal Commerce plugin.
 
+[![Latest Stable Version](https://img.shields.io/github/release/multisafepay/Drupal-Commerce.svg)](https://github.com/MultiSafepay/Drupal-Commerce/releases)
 
+## About MultiSafepay
+MultiSafepay is a collecting payment service provider which means we take care of the agreements, technical details and payment collection required for each payment method. You can start selling online today and manage all your transactions from one place.
+## Supported Payment Methods
+The supported Payment Methods & Gift cards for this plugin can be found over here: [Payment Methods & Gift cards](https://docs.multisafepay.com/plugins/drupal7/faq/#available-payment-methods-in-drupal7)
 
-INTRODUCTION
-------------
+## Requirements
+- To use the plugin you need a MultiSafepay account. You can create a test account on https://testmerchant.multisafepay.com/signup
+- Drupal Commerce
+- Drupal 7
 
-This is the new official MultiSafepay Commerce plugin using the 
-MultiSafepay JSON REST API.
+## Installation
 
-It offers all supported MultiSafepay Payment methods within your Drupal 
-Commerce store. When offering iDEAL as a payment method, the customer can select
-the iDEAL issuer from within your store.
+1. Login in your backend and navigate to Configuration and select Plugin Manager
+2. Search the MultiSafepay plugin and select Download now
+3. Navigate to Configuration and select Payment methods
+4. Navigate to Management and select Installed
+5. Search for the installed MultiSafepay plugin and click on the pencil
+6. Scroll down and look for the field named API key
+7. Enter your API key. Information on how to find your API key, please refer to the API key page. The other fields can be filled according to your own wishes.
 
-This module also supports the MultiSafepay Refund API call so that refunds can 
-be done from within the Drupal Commerce transaction of an order. 
+For additional information or instructions please see our [installation & configuration manual](https://docs.multisafepay.com/plugins/drupal7/manual/)
 
-
-FEATURES
---------
-
-The new Commerce MultiSafepay plugins use the new JSON API and has support for
-1. Adding separate payment methods to Commerce checkout
-2. Pay After Delivery
-3. Direct iDEAL (Select the issuer from within your drupal commerce store)
-4. Refund API
-5. Shipped API 
-
-
-
-IMPLEMENTATION
---------------
-
-The plugins can be installed by uploading them to your modules folder. When
-uploaded the plugins can be installed from within Drupal. All plugins depend on
-the main commerce_multisafepay_json plugin. That is the main plugin and must
-always be configured.
-
-RULES
---------------
-
+## Rules
 On installation of the main module, two additonal rules are installed (but not enabled):
+
 1. MultiSafepay Order paid in full: Order state to processing
 2. MultiSafepay Order Complete: Shipped at MultiSafepay
 
-When the first one is enabled, the order state will be set to processing once the order has been paid in full.
-The second rule will update the order status of the transaction at MultiSafepay. This will activate the Pay After Delivery/Klarna/E-invoice invoicing process.
-
-
-
-INTEGRATION (WITH OTHER MODULES)
---------------------------------
-
-The plugins have support for:
-1. Commerce_fees
-2. Commerce_discounts
-3. Commerce_coupons
-
-
-TROUBLESHOOTING (KNOWN THEME ISSUES)
-------------------------------------
-
-Whenever you have issues or found a bug then please contact us on the drupal
-project page or by contacting us by e-mailing techsupport@multisafepay.com.
-
-
-
-CONTRIBUTIONS ARE WELCOME!!
----------------------------
-
-Feel free to follow up in the issue queue for any contributions, bug
-reports, feature requests.
-Tests, feedback or comments in general are highly appreciated.
+When the first one is enabled, the order state will be set to processing once the order has been paid in full. The second rule will update the order status of the transaction at MultiSafepay. This will activate the Pay After Delivery/Klarna/E-invoice invoicing process.
+ 
+## Support
+You can create issues on our repository. If you need any additional help or support, please contact <a href="mailto:techsupport@multisafepay.com">techsupport@multisafepay.com</a>
