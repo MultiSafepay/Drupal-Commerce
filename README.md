@@ -19,14 +19,7 @@ The supported Payment Methods & Gift cards for this plugin can be found over her
 - Drupal 7
 
 ## Installation
-
-1. Login in your backend and navigate to Configuration and select Plugin Manager
-2. Search the MultiSafepay plugin and select Download now
-3. Navigate to Configuration and select Payment methods
-4. Navigate to Management and select Installed
-5. Search for the installed MultiSafepay plugin and click on the pencil
-6. Scroll down and look for the field named API key
-7. Enter your API key. Information on how to find your API key, please refer to the API key page. The other fields can be filled according to your own wishes.
+Unpack the content of the .ZIP file in the root of your webshop.
 
 For additional information or instructions please see our [installation & configuration manual](https://docs.multisafepay.com/plugins/drupal7/manual/)
 
