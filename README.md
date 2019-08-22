@@ -32,4 +32,4 @@ On installation of the main module, two additonal rules are installed (but not e
 When the first one is enabled, the order state will be set to processing once the order has been paid in full. The second rule will update the order status of the transaction at MultiSafepay. This will activate the Pay After Delivery/Klarna/E-invoice invoicing process.
  
 ## Support
-You can create issues on our repository. If you need any additional help or support, please contact <a href="mailto:techsupport@multisafepay.com">techsupport@multisafepay.com</a>
+You can create issues on our repository. If you need any additional help or support, please contact <a href="mailto:integration@multisafepay.com">integration@multisafepay.com</a>
