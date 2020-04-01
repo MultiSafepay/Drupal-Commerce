@@ -10,8 +10,8 @@
 *
 * @category MultiSafepay
 * @package Connect
-* @author TechSupport <techsupport@multisafepay.com>
-* @copyright Copyright (c) 2017 MultiSafepay, Inc. (http://www.multisafepay.com)
+* @author TechSupport <integration@multisafepay.com>
+* @copyright Copyright (c) 2020 MultiSafepay, Inc. (http://www.multisafepay.com)
 *
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
@@ -32,20 +32,20 @@ require_once dirname(__FILE__) . "/../commerce_multisafepay_json/commerce_multis
  *
  * Defines Multisafepay's Frontend payment method.
  */
-function commerce_multisafepay_banktrans_commerce_payment_method_info()
+function commerce_multisafepay_applepay_commerce_payment_method_info()
 {
     $payment_methods = array();
-    $payment = commerce_payment_method_instance_load('commerce_multisafepay_banktrans|commerce_payment_commerce_multisafepay_banktrans');
+    $payment = commerce_payment_method_instance_load('commerce_multisafepay_applepay|commerce_payment_commerce_multisafepay_applepay');
     if (!empty($payment['settings']['multisafepay_title'])) {
         $gateway_title = $payment['settings']['multisafepay_title'];
     } else {
-        $gateway_title = 'Bank Transfer';
+        $gateway_title = 'Apple Pay';
     }
-    
-    $payment_methods['commerce_multisafepay_banktrans'] = array(
-        'title' => 'MultiSafepay Bank Transfer',
+
+    $payment_methods['commerce_multisafepay_applepay'] = array(
+        'title' => 'MultiSafepay Apple Pay',
         'display_title' => $gateway_title,
-        'description' => t('Enable payments using multisafepay Global payments'),
+        'description' => t('Enable payments using MultiSafepay Global payments'),
         'terminal' => FALSE,
         'callbacks' => array(),
         'offsite' => TRUE,
@@ -57,7 +57,7 @@ function commerce_multisafepay_banktrans_commerce_payment_method_info()
 /**
  * Payment method callback: Generates the payment method settings form.
  */
-function commerce_multisafepay_banktrans_settings_form($settings = NULL)
+function commerce_multisafepay_applepay_settings_form($settings = NULL)
 {
     $form     = array();
     $settings = (array) $settings + array(
@@ -75,7 +75,7 @@ function commerce_multisafepay_banktrans_settings_form($settings = NULL)
 /**
  * Redirects the user to the hosted payment page.
  */
-function commerce_multisafepay_banktrans_redirect_form($form, &$form_state, $order, $payment_method)
+function commerce_multisafepay_applepay_redirect_form($form, &$form_state, $order, $payment_method)
 {
     $payment_method['settings'] += array(
         'cancel_return' => url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array(
@@ -85,9 +85,13 @@ function commerce_multisafepay_banktrans_redirect_form($form, &$form_state, $ord
             'absolute' => TRUE
         )),
         'payment_method' => $payment_method['instance_id'],
-        'gateway' => 'BANKTRANS',
+        'gateway' => 'APPLEPAY',
         'issuer' => '',
-        'type' => 'direct'
+        'type' => 'redirect'
     );
     return commerce_multisafepay_json_order_form($form, $form_state, $order, $payment_method);
+}
+
+function commerce_multisafepay_applepay_form_commerce_checkout_form_review_alter(&$form, &$form_state) {
+  drupal_add_js(drupal_get_path('module', 'commerce_multisafepay_applepay') . '/applepay.js');
 }
