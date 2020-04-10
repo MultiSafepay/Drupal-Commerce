@@ -19,9 +19,14 @@ The supported Payment Methods & Gift cards for this plugin can be found over her
 - Drupal 7
 
 ## Installation
-Unpack the content of the .ZIP file in the root of your webshop.
+Unpack the content of the .ZIP file in /sites/all/modules.
 
 For additional information or instructions please see our [installation & configuration manual](https://docs.multisafepay.com/plugins/drupal7/manual/)
+
+## Configuration
+1. Login in your admin and navigate to the backend of your webshop and go to _Site settings -> Modules_
+2. Scroll down and turn on _Commerce MultiSafepay JSON_ and the payment methods you would like to offer
+3. Navigate to _Store settings -> Payment methods_ and enable multisafepay and on the edit page you can fill in your API details. Information on where to find your Account ID, Site ID, Site code or API key can be found on our [API key page](https://docs.multisafepay.com/tools/multisafepay-control/get-your-api-key/).
 
 ## Rules
 On installation of the main module, two additonal rules are installed (but not enabled):
