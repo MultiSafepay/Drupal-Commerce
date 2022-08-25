@@ -4,40 +4,50 @@
 
 # MultiSafepay plugin for Drupal Commerce
 
-Easily integrate MultiSafepay payment solutions into your Drupal Commerce webshop with the free MultiSafepay Drupal Commerce plugin.
+Easily integrate MultiSafepay payment solutions into your Drupal Commerce webshop with our free plugin.
 
-[![Latest Stable Version](https://img.shields.io/github/release/multisafepay/Drupal-Commerce.svg)](https://github.com/MultiSafepay/Drupal-Commerce/releases)
+[![Latest stable version](https://img.shields.io/github/release/multisafepay/Drupal-Commerce.svg)](https://github.com/MultiSafepay/Drupal-Commerce/releases)
 
 ## About MultiSafepay
-MultiSafepay is a collecting payment service provider which means we take care of the agreements, technical details and payment collection required for each payment method. You can start selling online today and manage all your transactions from one place.
-## Supported Payment Methods
-The supported Payment Methods & Gift cards for this plugin can be found over here: [Payment Methods & Gift cards](https://docs.multisafepay.com/plugins/drupal7/faq/#available-payment-methods-in-drupal7)
 
-## Requirements
-- To use the plugin you need a MultiSafepay account. You can create a test account on https://testmerchant.multisafepay.com/signup
+MultiSafepay is a collecting payment service provider, which means we take care of electronic contracts, technical details, and payment collection for each payment method. You can start selling online today and manage all your transactions in one place.
+
+## Supported payment methods
+
+See MultiSafepay Docs – [PrestaShop 1.6](https://docs.multisafepay.com/docs/prestashop-1-6) > Payment methods.
+
+## Prerequisites
+
+- You will need a [MultiSafepay account](https://testmerchant.multisafepay.com/signup). Consider a test account first.
 - Drupal Commerce
 - Drupal 7
 
-## Installation
-Unpack the content of the .ZIP file in /sites/all/modules.
+## Installation and configuration
 
-For additional information or instructions please see our [installation & configuration manual](https://docs.multisafepay.com/plugins/drupal7/manual/)
+1. Unpack the contents of the .zip archive and upload the **Modules** folder via SFTP to the PrestaShop root directoy, merging the two folders.
+2. Sign in to your PrestaShop 1.6 backend.
+3. Go to **Modules and services** > **Payments and gateways**.
+    **Note:** You must install and configure the MultiSafepay Core Module (MultiSafepay) because all payment methods require certain settings and/or the API key in the core module.
+4. In the next screen, proceed with the installation.
+5. Enter your [API key](https://docs.multisafepay.com/docs/sites#site-id-api-key-and-security-code), and then click **Save**.
+6. On the **Payments** tab, enable the relevant payment methods.
 
-## Configuration
-1. Login in your admin and navigate to the backend of your webshop and go to _Site settings -> Modules_
-2. Scroll down and turn on _Commerce MultiSafepay JSON_ and the payment methods you would like to offer
-3. Navigate to _Store settings -> Payment methods_ and enable multisafepay and on the edit page you can fill in your API details. Information on where to find your Account ID, Site ID, Site code or API key can be found on our [API key page](https://docs.multisafepay.com/tools/multisafepay-control/get-your-api-key/).
+For more information, see PrestaShop 1.6](https://docs.multisafepay.com/docs/prestashop-1-6).
 
 ## Rules
+
 On installation of the main module, two additonal rules are installed (but not enabled):
 
-1. MultiSafepay Order paid in full: Order state to processing
-2. MultiSafepay Order Complete: Shipped at MultiSafepay
+- MultiSafepay order paid in full: Order state to processing
+- MultiSafepay order complete: Shipped at MultiSafepay
 
-When the first one is enabled, the order state will be set to processing once the order has been paid in full. The second rule will update the order status of the transaction at MultiSafepay. This will activate the Pay After Delivery/Klarna/E-invoice invoicing process.
+When the first one is enabled, the order state changes to processing once the order has been paid in full. The second rule updates the MultiSafepay order status to trigger invoicing for BNPL orders.
  
 ## Support
-You can create issues on our repository. If you need any additional help or support, please contact <a href="mailto:integration@multisafepay.com">integration@multisafepay.com</a>
+
+- Create an issue on this repository. 
+- Email <a href="mailto:integration@multisafepay.com">integration@multisafepay.com</a>
 
 ## Want to be part of the team?
-Are you a developer interested in working at MultiSafepay? [View](https://www.multisafepay.com/careers/#jobopenings) our job openings and feel free to get in touch with us.
+
+Are you a developer interested in working at MultiSafepay? Check out our [job openings](https://www.multisafepay.com/careers/#jobopenings) and feel free to get in touch!
