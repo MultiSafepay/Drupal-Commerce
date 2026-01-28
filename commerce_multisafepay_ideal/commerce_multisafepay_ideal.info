@@ -1,5 +1,5 @@
-name = Commerce MultiSafepay iDEAL
-description = Integrates MultiSafepay iDEAL Payment Method
+name = Commerce MultiSafepay iDEAL | Wero
+description = Integrates MultiSafepay iDEAL | Wero Payment Method
 core = 7.x
 package = Commerce - Payment
 dependencies[] = commerce
