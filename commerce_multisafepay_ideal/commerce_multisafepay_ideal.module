@@ -41,14 +41,14 @@ function commerce_multisafepay_ideal_commerce_payment_method_info()
     if (!empty($payment['settings']['multisafepay_title'])) {
         $gateway_title = $payment['settings']['multisafepay_title'];
     } else {
-        $gateway_title = 'iDEAL';
+        $gateway_title = 'iDEAL | Wero';
     }
     
    
     
     
     $payment_methods['commerce_multisafepay_ideal'] = array(
-        'title' => 'MultiSafepay iDEAL',
+        'title' => 'MultiSafepay iDEAL | Wero',
         'display_title' => $gateway_title,
         'description' => t('Enable payments using multisafepay Global payments'),
         'terminal' => FALSE,
